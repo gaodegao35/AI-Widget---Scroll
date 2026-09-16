@@ -27,8 +27,18 @@
       el.append(U.el('div', { class: 'sw-menu-sub', text: `AI: ${SW.ai.hasKey ? 'Claude key saved — live labels / find by meaning / implicit refs' : 'no key — heuristics + pre-computed labels' + (SW.ai.direct ? '' : ' (set one in extension options)')}` }));
       if (SW.ai.direct) {
         const inp = U.el('input', { class: 'sw-find-input', type: 'password', placeholder: 'Claude API key (sk-ant-…) — stays in this page’s localStorage', value: SW.ai.directKey() });
-        inp.addEventListener('change', () => { SW.ai.setDirectKey(inp.value.trim()); setTimeout(() => this.render(), 100); });
-        el.append(U.el('div', { class: 'sw-menu-row' }, [inp]));
+        const status = U.el('span', { class: 'sw-menu-sub', text: SW.ai.directKey() ? `saved (${SW.ai.directKey().length} chars) · ${location.host}` : 'not set' });
+        const save = () => { SW.ai.setDirectKey(inp.value.trim()); status.textContent = inp.value.trim() ? `saved (${inp.value.trim().length} chars) · ${location.host}` : 'not set'; };
+        inp.addEventListener('input', U.debounce(save, 300));
+        inp.addEventListener('change', save);
+        inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { save(); e.preventDefault(); } });
+        el.append(U.el('div', { class: 'sw-menu-row' }, [inp, status]));
+        el.append(U.el('button', { class: 'sw-mini', style: 'margin:2px 6px 6px', text: 'Test the key', onclick: async (e) => {
+          e.target.textContent = 'testing…';
+          const r = await self.SW_AI.callClaude(SW.ai.directKey(), 'rerank', { query: 'test', candidates: [{ id: 'a', text: 'a test' }] });
+          e.target.textContent = r.ok ? '✓ key works' : `✗ ${r.reason}${r.detail ? ': ' + String(r.detail).slice(0, 120) : ''}`;
+          SW.ai.hasKey = null; SW.ai.check();
+        } }));
       }
       if (SW.ai.lastError) el.append(U.el('div', { class: 'sw-menu-sub', style: 'color:#ff8a8a', text: 'last AI error: ' + SW.ai.lastError }));
       el.append(U.el('div', { class: 'sw-menu-sub', text: `adapter: ${SW.adapter.name} · ${SW.labeler.chunks.length} chunks` }));
