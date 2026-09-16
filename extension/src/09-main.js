@@ -17,11 +17,11 @@
     render() {
       const s = SW.settings, el = this.el; el.innerHTML = '';
       el.append(U.el('div', { class: 'sw-menu-title', text: 'Scroll Widgets · prototypes' }));
-      const presets = [['P1', 'P1 · Where is it?  (markers + find + ticker + waypoints)'], ['P2', 'P2 · Take me there & back  (references + waypoints)'], ['P3', 'P3 · Two places at once  (pins + waypoints)'], ['ALL', 'Everything']];
+      const presets = [['P1', 'Where is it?  (markers + find + ticker + waypoints)'], ['P2', 'Take me there & back  (references + waypoints)'], ['P3', 'Two places at once  (pins + waypoints)'], ['ALL', 'Everything']];
       presets.forEach(([k, t]) => el.append(U.el('label', { class: 'sw-menu-row' }, [
         U.el('input', { type: 'radio', name: 'sw-preset', ...(s.preset === k ? { checked: '' } : {}), onchange: () => { SW.applyPreset(k); this.render(); } }), ' ', t])));
       el.append(U.el('div', { class: 'sw-menu-sub', text: 'features' }));
-      [['markers', '4 · labeled markers on the rail'], ['find', '3 · point-to-find (⌘⇧F / select text)'], ['ticker', '5 · speed ticker when flicking'], ['waypoints', '7 · waypoints + ⌘[ back'], ['pins', '10 · pin & compare'], ['refs', '1 · reference links in answers']]
+      [['markers', 'Labeled markers on the rail'], ['find', 'Point-to-find (⌘⇧F / select text)'], ['ticker', 'Speed ticker when flicking'], ['waypoints', 'Waypoints + ⌘[ back'], ['pins', 'Pin & compare'], ['refs', 'Reference links in answers']]
         .forEach(([k, t]) => el.append(U.el('label', { class: 'sw-menu-row' }, [
           U.el('input', { type: 'checkbox', ...(s[k] ? { checked: '' } : {}), onchange: (e) => { SW.setSetting(k, e.target.checked); this.render(); } }), ' ', t])));
       el.append(U.el('div', { class: 'sw-menu-sub', text: `AI: ${SW.ai.hasKey ? 'Claude key saved — live labels / find by meaning / implicit refs' : 'no key — heuristics + pre-computed labels' + (SW.ai.direct ? '' : ' (set one in extension options)')}` }));
