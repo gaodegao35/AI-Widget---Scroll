@@ -145,18 +145,37 @@
       this.results = results;
       this.idx = -1;
       this.renderResults(q, 'local');
-      // second stage: ask Claude to rank by meaning. Over EVERYTHING when the document is small (a chat),
-      // otherwise over the local top 60 plus all headings, so a paraphrase the local stage missed can still win.
+      // second stage: ask Claude to rank by meaning.
+      //   small document (a chat, an article): one call over EVERYTHING.
+      //   long document (a book): call 1 picks relevant sections from the headings, call 2 ranks the passages
+      //   inside those sections (+ the local top hits), so a paraphrase with zero keyword overlap can still win.
       if (await SW.ai.check()) {
         const ticket = (this._ticket = (this._ticket || 0) + 1);
-        const pool = all.length <= 120 ? all.map(x => x.c)
-          : [...new Set([...all.slice(0, 60).map(x => x.c), ...SW.labeler.chunks.filter(c => c.type === 'heading')])];
+        this.note.textContent = 'searching by meaning…';
+        const chunks = SW.labeler.chunks;
+        let pool;
+        if (chunks.length <= 150) pool = chunks;
+        else {
+          const heads = chunks.map((c, i) => ({ c, i })).filter(x => x.c.type === 'heading' || x.c.type === 'prompt');
+          const context = (i) => { const n = chunks[i + 1]; return n && n.type !== 'heading' ? ' — ' + (n.text || '').slice(0, 140) : ''; };
+          const sec = await SW.ai.call('rerank', { query: q, candidates: heads.map(x => ({ id: x.c.id, text: (x.c.text || '').slice(0, 80) + context(x.i) })) });
+          if (ticket !== this._ticket) return;
+          const chosen = new Set(Array.isArray(sec) ? sec.slice(0, 6) : []);
+          const under = [];
+          heads.forEach((x, k) => {
+            if (!chosen.has(x.c.id)) return;
+            const end = k + 1 < heads.length ? heads[k + 1].i : chunks.length;
+            under.push(...chunks.slice(x.i, Math.min(end, x.i + 40)));
+          });
+          pool = [...new Set([...under, ...all.slice(0, 40).map(x => x.c)])];
+        }
         const ranked = await SW.ai.call('rerank', { query: q, candidates: pool.map(c => ({ id: c.id, text: (c.text || c.alt || '').slice(0, 240) })) });
-        if (ticket !== this._ticket || !Array.isArray(ranked)) return;
+        if (ticket !== this._ticket) return;
+        if (!Array.isArray(ranked)) { this.note.textContent += ' · AI unavailable, showing local ranking'; return; }
         const byId = Object.fromEntries(pool.map(c => [c.id, c]));
         let re = ranked.map(id => byId[id]).filter(Boolean).slice(0, 12);
         re = re.filter(c => !(c.type === 'answer' && re.some(o => o !== c && c.el.contains(o.el))));
-        if (re.length) { this.results = re; this.idx = -1; this.renderResults(q, 'ai'); }
+        this.results = re; this.idx = -1; this.renderResults(q, 'ai');
       }
     },
 
