@@ -190,13 +190,19 @@
         let pos = -1;
         for (const t of terms) { const p = raw.toLowerCase().indexOf(t.slice(0, 4)); if (p >= 0 && (pos < 0 || p < pos)) pos = p; }
         const start = Math.max(0, pos - 50);
-        let ex = U.esc(raw.slice(start, start + 150));
-        terms.forEach(t => { if (t.length >= 3) ex = ex.replace(new RegExp(`(${t.slice(0, 5)}[a-z]*)`, 'ig'), '<mark>$1</mark>'); });
+        // one pass with a combined pattern, so an inserted <mark> tag can never be matched by a later term
+        const stems = [...new Set(terms.filter(t => t.length >= 3).map(t => t.slice(0, 5).replace(/[^a-z0-9]/g, '')))].filter(Boolean);
+        const rx = stems.length ? new RegExp(`\\b(${stems.join('|')})[a-z]*`, 'ig') : null;
+        let html = '';
+        if (rx) { let last = 0, m; const seg = raw.slice(start, start + 150); rx.lastIndex = 0;
+          while ((m = rx.exec(seg))) { html += U.esc(seg.slice(last, m.index)) + '<mark>' + U.esc(m[0]) + '</mark>'; last = m.index + m[0].length; }
+          html += U.esc(seg.slice(last)); }
+        else html = U.esc(raw.slice(start, start + 150));
         const row = U.el('div', { class: 'sw-find-item' + (i === this.idx ? ' sw-cur' : ''), onclick: () => this.goTo(i) }, [
           U.el('span', { class: 'sw-lens-ic', text: SW.TYPE_ICON[c.type] || '•' }),
           U.el('div', {}, [
             U.el('div', { class: 'sw-find-label', text: SW.labeler.labelOf(c) + (c.turn ? `  · t${c.turn}` : '') }),
-            U.el('div', { class: 'sw-find-ex', html: (start ? '…' : '') + ex })
+            U.el('div', { class: 'sw-find-ex', html: (start ? '…' : '') + html })
           ])
         ]);
         this.list.append(row);
