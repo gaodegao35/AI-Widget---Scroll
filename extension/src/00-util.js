@@ -105,25 +105,34 @@
     contentEl() { return this.isWindow ? document.body : this.el; }
   };
 
-  // ---------- AI bridge (optional; resolves null when no key / not in an extension context) ----------
+  // ---------- AI bridge ----------
+  // In the extension, calls go through background.js (key in chrome.storage). In ?dev mode (no extension),
+  // the page calls the API directly with a key kept in localStorage — the API permits browser calls.
+  const inExtension = () => { try { return !!(chrome.runtime && chrome.runtime.id); } catch { return false; } };
   SW.ai = {
     hasKey: null,
+    direct: !inExtension(),
+    directKey() { return U.store.get('claudeKey', ''); },
+    setDirectKey(k) { U.store.set('claudeKey', k); this.hasKey = null; this.check(); },
     async check() {
       if (this.hasKey != null) return this.hasKey;
-      try {
-        const r = await chrome.runtime.sendMessage({ type: 'sw-haskey' });
-        this.hasKey = !!(r && r.ok);
-      } catch { this.hasKey = false; }
+      if (this.direct) this.hasKey = !!this.directKey();
+      else {
+        try { const r = await chrome.runtime.sendMessage({ type: 'sw-haskey' }); this.hasKey = !!(r && r.ok); }
+        catch { this.hasKey = false; }
+      }
       SW.bus.emit('ai-status', this.hasKey);
       return this.hasKey;
     },
     async call(task, payload) {
       if (!(await this.check())) return null;
       try {
-        const r = await chrome.runtime.sendMessage({ type: 'sw-ai', task, payload });
-        if (!r || !r.ok) { SW.log('AI call failed', task, r); return null; }
+        const r = this.direct ? await self.SW_AI.callClaude(this.directKey(), task, payload)
+                              : await chrome.runtime.sendMessage({ type: 'sw-ai', task, payload });
+        if (!r || !r.ok) { SW.log('AI call failed', task, r); this.lastError = r && (r.reason + (r.detail ? ': ' + String(r.detail).slice(0, 200) : '')); SW.bus.emit('ai-status', this.hasKey); return null; }
+        this.lastError = null;
         return r.result;
-      } catch (e) { SW.log('AI bridge error', e); return null; }
+      } catch (e) { SW.log('AI bridge error', e); this.lastError = String(e); return null; }
     }
   };
 

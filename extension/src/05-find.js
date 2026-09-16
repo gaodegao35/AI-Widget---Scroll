@@ -6,16 +6,41 @@
 
   // A small paraphrase table so the fallback is not pure keyword search.
   const SYN = {
-    parse: ['read', 'load', 'split', 'tokenize', 'process'], error: ['bug', 'exception', 'fail', 'crash', 'break', 'issue', 'problem'],
-    image: ['picture', 'logo', 'visual', 'drawing', 'diagram', 'figure', 'illustration', 'render'], chart: ['graph', 'plot', 'bar', 'visualization'],
-    table: ['grid', 'list', 'matrix', 'comparison'], fix: ['patch', 'repair', 'resolve', 'handle', 'solve', 'correct'],
-    newline: ['linebreak', 'multiline', 'line'], speed: ['fast', 'performance', 'benchmark', 'timing', 'slow', 'latency'],
-    code: ['snippet', 'function', 'script', 'implementation', 'program'], bicycle: ['bike', 'cycle'], bike: ['bicycle'],
-    version: ['revision', 'iteration', 'variant', 'v1', 'v2', 'v3', 'v4', 'update'], test: ['unittest', 'check', 'assert', 'verify', 'pytest'],
-    summary: ['recap', 'overview', 'summarize', 'tldr'], quote: ['quotation', 'quoted', 'escape', 'escaping'], scroll: ['scrollbar', 'scrolling', 'navigate'],
-    history: ['origin', 'invented', 'first', 'early', 'past'], user: ['people', 'reader', 'person'], research: ['study', 'paper', 'experiment', 'finding'],
-    unicode: ['bom', 'encoding', 'utf'], type: ['infer', 'inference', 'int', 'float', 'datatype'], readme: ['documentation', 'docs', 'instructions'],
-    blue: ['colour', 'color'], red: ['colour', 'color'], state: ['machine', 'transition', 'fsm'], mouse: ['wheel', 'pointer', 'trackpad', 'touchpad']
+    // domain
+    parse: ['read', 'load', 'split', 'tokenize', 'process', 'scan', 'parser', 'parsing'], parser: ['parse', 'scanner', 'reader', 'code'],
+    error: ['bug', 'exception', 'fail', 'failure', 'crash', 'break', 'broken', 'issue', 'problem', 'wrong'], bug: ['error', 'problem', 'issue', 'broken', 'break'],
+    image: ['picture', 'photo', 'logo', 'visual', 'drawing', 'diagram', 'figure', 'illustration', 'render', 'graphic', 'icon', 'art'],
+    picture: ['image', 'photo', 'logo', 'visual', 'drawing', 'illustration'], logo: ['image', 'icon', 'mark', 'brand', 'bicycle'],
+    diagram: ['image', 'drawing', 'figure', 'chart', 'machine', 'state'], chart: ['graph', 'plot', 'bar', 'visualization', 'figure', 'diagram'], graph: ['chart', 'plot', 'bar'],
+    table: ['grid', 'list', 'matrix', 'comparison', 'rows', 'columns', 'spreadsheet'], list: ['table', 'items'],
+    fix: ['patch', 'repair', 'resolve', 'handle', 'solve', 'correct', 'fixed', 'update'], solve: ['fix', 'handle', 'resolve'],
+    newline: ['linebreak', 'multiline', 'line', 'break', 'return'], line: ['newline', 'row'],
+    speed: ['fast', 'slow', 'performance', 'benchmark', 'timing', 'latency', 'quick', 'time', 'seconds'], fast: ['speed', 'quick', 'performance', 'benchmark'],
+    slow: ['speed', 'performance', 'benchmark'], performance: ['speed', 'benchmark', 'timing', 'fast', 'slow'], benchmark: ['speed', 'performance', 'timing', 'numbers'],
+    code: ['snippet', 'function', 'script', 'implementation', 'program', 'source', 'python', 'def'], function: ['code', 'def', 'method'],
+    bicycle: ['bike', 'cycle', 'logo'], bike: ['bicycle', 'cycle', 'logo'],
+    version: ['revision', 'iteration', 'variant', 'v1', 'v2', 'v3', 'v4', 'update', 'edition'], latest: ['final', 'last', 'newest', 'v4'], final: ['latest', 'last', 'v4'], first: ['initial', 'earliest', 'v1'],
+    test: ['unittest', 'check', 'assert', 'verify', 'pytest', 'testing', 'spec'], summary: ['recap', 'overview', 'summarize', 'tldr', 'everything', 'conclusion'], recap: ['summary', 'overview'],
+    quote: ['quotation', 'quoted', 'escape', 'escaping'], escape: ['quote', 'quoted', 'backslash'],
+    scroll: ['scrollbar', 'scrolling', 'navigate', 'navigation', 'wheel', 'flick'], scrollbar: ['scroll', 'thumb', 'bar', 'indicator'],
+    history: ['origin', 'invented', 'first', 'early', 'past', 'before', 'beginning'], early: ['first', 'history', 'origin', 'before'],
+    user: ['people', 'reader', 'person', 'participant'], people: ['user', 'reader', 'person'], research: ['study', 'paper', 'experiment', 'finding', 'literature', 'researchers'],
+    unicode: ['bom', 'encoding', 'utf', 'byte'], bom: ['unicode', 'byte', 'mark', 'encoding'], encoding: ['unicode', 'utf', 'bom'],
+    type: ['infer', 'inference', 'int', 'float', 'datatype', 'coerce', 'typed'], number: ['int', 'float', 'numeric', 'digit', 'coerce'], readme: ['documentation', 'docs', 'instructions', 'guide'],
+    blue: ['colour', 'color'], red: ['colour', 'color'], color: ['red', 'blue', 'colour'], state: ['machine', 'transition', 'fsm', 'diagram'],
+    mouse: ['wheel', 'pointer', 'trackpad', 'touchpad', 'intellimouse'], touch: ['phone', 'finger', 'flick', 'drag', 'iphone'], phone: ['touch', 'mobile', 'iphone', 'ios'],
+    // general english
+    make: ['create', 'build', 'write', 'generate', 'draw'], create: ['make', 'build', 'generate', 'write'], build: ['make', 'create', 'write'], write: ['make', 'create', 'draft'],
+    draw: ['diagram', 'sketch', 'image', 'plot'], show: ['display', 'plot', 'draw'], explain: ['why', 'because', 'reason', 'deal', 'explanation'], why: ['explain', 'reason', 'because'],
+    change: ['different', 'difference', 'diff', 'modify', 'update', 'changed'], difference: ['diff', 'change', 'compare', 'versus', 'vs'], compare: ['difference', 'versus', 'vs', 'comparison'],
+    big: ['large', 'huge', 'long'], small: ['tiny', 'short', 'little'], long: ['big', 'large', 'lengthy'], start: ['begin', 'beginning', 'first', 'top', 'initial'], end: ['last', 'final', 'bottom', 'finish'],
+    problem: ['issue', 'bug', 'error', 'trouble'], result: ['output', 'outcome', 'numbers', 'finding'], old: ['earlier', 'previous', 'legacy', 'before', 'prior'], previous: ['earlier', 'old', 'prior', 'before', 'above'],
+    earlier: ['previous', 'old', 'before', 'above'], new: ['latest', 'recent', 'updated'], keep: ['stay', 'remain', 'preserve'], remove: ['drop', 'delete', 'strip'], drop: ['remove', 'delete', 'strip'],
+    strip: ['remove', 'drop', 'delete'], add: ['include', 'append', 'insert'], handle: ['support', 'deal', 'process', 'manage'], support: ['handle', 'allow'],
+    file: ['document', 'csv', 'text'], document: ['file', 'page', 'article'], example: ['instance', 'case', 'sample'], case: ['example', 'edge', 'scenario'],
+    hard: ['difficult', 'tricky'], easy: ['simple', 'trivial'], wrong: ['incorrect', 'error', 'bug'], right: ['correct'],
+    money: ['cost', 'price', 'dollar', 'pay'], cost: ['price', 'money', 'expensive'], time: ['duration', 'seconds', 'minutes', 'when'],
+    place: ['location', 'position', 'where', 'spot'], location: ['place', 'position', 'where'], return: ['back', 'come', 'go'], find: ['search', 'locate', 'look']
   };
   const expand = (t) => new Set([t, ...(SYN[t] || []).map(U.stem)]);
 
@@ -112,21 +137,26 @@
       this.list.innerHTML = ''; this.note.textContent = '';
       if (q.length < 2) { this.results = []; this.count.textContent = ''; SW.rail.setHits([]); return; }
       const qTokens = U.tokens(q);
-      const scored = SW.labeler.chunks.map(c => ({ c, s: this.score(c, qTokens, q) })).filter(x => x.s >= 0.34).sort((a, b) => b.s - a.s).slice(0, 12);
+      const all = SW.labeler.chunks.map(c => ({ c, s: this.score(c, qTokens, q) })).sort((a, b) => b.s - a.s);
+      const scored = all.filter(x => x.s >= 0.34).slice(0, 12);
       let results = scored.map(x => x.c);
       // an answer and the code/image/table inside it both matching → keep the artifact only
       results = results.filter(c => !(c.type === 'answer' && results.some(o => o !== c && c.el.contains(o.el))));
       this.results = results;
       this.idx = -1;
       this.renderResults(q, 'local');
-      // second stage: paraphrase re-ranking with Claude, only over these few candidates
+      // second stage: ask Claude to rank by meaning. Over EVERYTHING when the document is small (a chat),
+      // otherwise over the local top 60 plus all headings, so a paraphrase the local stage missed can still win.
       if (await SW.ai.check()) {
         const ticket = (this._ticket = (this._ticket || 0) + 1);
-        const ranked = await SW.ai.call('rerank', { query: q, candidates: this.results.map(c => ({ id: c.id, text: (c.text || c.alt || '').slice(0, 300) })) });
+        const pool = all.length <= 120 ? all.map(x => x.c)
+          : [...new Set([...all.slice(0, 60).map(x => x.c), ...SW.labeler.chunks.filter(c => c.type === 'heading')])];
+        const ranked = await SW.ai.call('rerank', { query: q, candidates: pool.map(c => ({ id: c.id, text: (c.text || c.alt || '').slice(0, 240) })) });
         if (ticket !== this._ticket || !Array.isArray(ranked)) return;
-        const byId = Object.fromEntries(this.results.map(c => [c.id, c]));
-        const re = ranked.map(id => byId[id]).filter(Boolean);
-        if (re.length) { this.results = re; this.renderResults(q, 'ai'); }
+        const byId = Object.fromEntries(pool.map(c => [c.id, c]));
+        let re = ranked.map(id => byId[id]).filter(Boolean).slice(0, 12);
+        re = re.filter(c => !(c.type === 'answer' && re.some(o => o !== c && c.el.contains(o.el))));
+        if (re.length) { this.results = re; this.idx = -1; this.renderResults(q, 'ai'); }
       }
     },
 

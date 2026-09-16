@@ -17,7 +17,8 @@
         m.el.dataset.swRefs = '1';
         const earlier = messages.slice(0, i);
         const found = this.linkExplicit(m, earlier);
-        if (!found && SW.ai.hasKey) this.linkImplicit(m, earlier);
+        // implicit refs only to messages further back than the prompt this answer is replying to
+        if (!found && SW.ai.hasKey && i >= 3) this.linkImplicit(m, messages.slice(0, i - 1));
       });
     },
 

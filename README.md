@@ -20,13 +20,20 @@ python3 -m http.server 8000        # from the repo root
 open http://localhost:8000/fixtures/index.html
 ```
 `chat.html?dev`, `article.html?dev`, `document.html?dev` load the widget straight from `extension/src/`.
-No AI calls in this mode (heuristics + pre-computed labels).
+To use Claude in this mode, open the ⚙ menu on the rail and paste an API key into the field at the bottom
+(kept in that page's localStorage; the API accepts direct browser calls).
 
 **Option B — the extension, for real pages and for testing.**
 1. `chrome://extensions` → *Developer mode* → *Load unpacked* → pick `extension/`.
 2. It activates automatically on `chatgpt.com` and on `localhost` (the fixtures, opened *without* `?dev`).
    On any other long page, click the toolbar icon to inject it.
 3. Optional: extension *Options* → paste a Claude API key → live labels, paraphrase re-ranking, implicit references.
+
+**What the key changes.** Without it, find is keyword matching plus a paraphrase table, labels are heuristic
+(first words / first code line), and only explicit `[turn N]` / `[ref: "…"]` references become links. With it,
+find ranks every passage by meaning in one call ("the gadget that spins between the mouse buttons" → the IntelliMouse
+paragraph), labels near the viewport are rewritten by Claude ("Regenerate beats scrolling back"), and implicit
+references ("the version above") are detected.
 
 ## Using it
 

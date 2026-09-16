@@ -17,6 +17,7 @@
         "http://127.0.0.1/*"
       ],
       "js": [
+        "src/00-ai-core.js",
         "src/00-util.js",
         "src/01-adapters.js",
         "src/02-labeler.js",

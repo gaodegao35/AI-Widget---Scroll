@@ -24,7 +24,13 @@
       [['markers', '4 · labeled markers on the rail'], ['find', '3 · point-to-find (⌘⇧F / select text)'], ['ticker', '5 · speed ticker when flicking'], ['waypoints', '7 · waypoints + ⌘[ back'], ['pins', '10 · pin & compare'], ['refs', '1 · reference links in answers']]
         .forEach(([k, t]) => el.append(U.el('label', { class: 'sw-menu-row' }, [
           U.el('input', { type: 'checkbox', ...(s[k] ? { checked: '' } : {}), onchange: (e) => { SW.setSetting(k, e.target.checked); this.render(); } }), ' ', t])));
-      el.append(U.el('div', { class: 'sw-menu-sub', text: `AI: ${SW.ai.hasKey ? 'Claude key saved — live labels / re-rank / implicit refs' : 'no key — heuristics + pre-computed labels (set one in extension options)'}` }));
+      el.append(U.el('div', { class: 'sw-menu-sub', text: `AI: ${SW.ai.hasKey ? 'Claude key saved — live labels / find by meaning / implicit refs' : 'no key — heuristics + pre-computed labels' + (SW.ai.direct ? '' : ' (set one in extension options)')}` }));
+      if (SW.ai.direct) {
+        const inp = U.el('input', { class: 'sw-find-input', type: 'password', placeholder: 'Claude API key (sk-ant-…) — stays in this page’s localStorage', value: SW.ai.directKey() });
+        inp.addEventListener('change', () => { SW.ai.setDirectKey(inp.value.trim()); setTimeout(() => this.render(), 100); });
+        el.append(U.el('div', { class: 'sw-menu-row' }, [inp]));
+      }
+      if (SW.ai.lastError) el.append(U.el('div', { class: 'sw-menu-sub', style: 'color:#ff8a8a', text: 'last AI error: ' + SW.ai.lastError }));
       el.append(U.el('div', { class: 'sw-menu-sub', text: `adapter: ${SW.adapter.name} · ${SW.labeler.chunks.length} chunks` }));
     }
   };
