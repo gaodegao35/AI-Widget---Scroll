@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fixture · Long document (generated book, 24 chapters)</title>
+<style>
+  body { margin: 0; background: #fbfaf7; color: #222; font: 16px/1.6 Georgia, serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 40px 20px 120px; }
+  h1 { font-size: 34px; margin: 0 0 6px; } .dek { color: #777; font: 14px -apple-system, system-ui, sans-serif; margin-bottom: 40px; }
+  h2 { font-size: 24px; margin: 64px 0 8px; } h3 { font-size: 17px; margin: 28px 0 4px; font-family: -apple-system, system-ui, sans-serif; }
+  figure { margin: 22px 0; } figcaption { font: 12.5px -apple-system, system-ui, sans-serif; color: #777; margin-top: 6px; }
+  svg { display: block; border: 1px solid #e3e1da; border-radius: 6px; background: #fff; }
+  table { border-collapse: collapse; font: 13.5px -apple-system, system-ui, sans-serif; margin: 14px 0; }
+  th, td { border: 1px solid #ddd; padding: 5px 9px; } th { background: #f0eee8; }
+</style></head>
+<body><main id="book">
+<h1>Field Notes on Navigation</h1>
+<p class="dek">A generated 24-chapter book (~400 paragraphs) to test the "lazy labeling" rule: the rail gets chapter/section markers instantly from the headings; fine labels are produced only near where you are.</p>
+</main>
+<script>
+// Deterministic generator so every test participant sees the same book.
+let seed = 42; const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+const pick = (a) => a[Math.floor(rnd() * a.length)];
+const TOPICS = ['harbours', 'maps', 'lighthouses', 'tides', 'compasses', 'star charts', 'river pilots', 'trade winds', 'sea lanes', 'sextants', 'chronometers', 'logbooks', 'soundings', 'buoys', 'fog signals', 'coastlines', 'canals', 'ferries', 'ice routes', 'caravans', 'railway timetables', 'subway maps', 'street grids', 'wayfinding signs'];
+const SUBJ = ['The pilot', 'A navigator', 'The harbour master', 'Every crew', 'The cartographer', 'A traveller', 'The keeper', 'The surveyor', 'Any reader of charts', 'The old captain'];
+const VERB = ['relied on', 'distrusted', 'recorded', 'measured', 'argued about', 'redrew', 'memorised', 'lost track of', 'compared', 'annotated'];
+const OBJ = ['the shifting channel', 'a landmark on the far shore', 'the depth marks along the quay', 'the position of the morning star', 'the drift of the current', 'a smudge on the horizon', 'the count of buoys passed', 'the bearing of the headland', 'the last known fix', 'the margin notes of the previous voyage'];
+const TAIL = ['before committing to a course.', 'and wrote the result in the log.', 'which nobody had checked in years.', 'until the fog lifted.', 'as the tide turned.', 'long after it was needed.', 'while the rest slept.', 'and was usually right.', 'but not the reason for it.', 'and marked the chart accordingly.'];
+const SECT = ['First bearings', 'The problem of return', 'Marks that mean something', 'Two places at once', 'Speed and precision', 'What the map leaves out', 'Reading the wear', 'Lost and found', 'Landmarks', 'A note on instruments'];
+const sentence = () => `${pick(SUBJ)} ${pick(VERB)} ${pick(OBJ)} ${pick(TAIL)}`;
+const para = (n) => Array.from({ length: n }, sentence).join(' ');
+
+const main = document.getElementById('book');
+let html = '';
+for (let ch = 1; ch <= 24; ch++) {
+  const topic = TOPICS[ch - 1];
+  html += `<h2>Chapter ${ch} · ${topic[0].toUpperCase() + topic.slice(1)}</h2>`;
+  html += `<p>${para(5)}</p><p>${para(4)}</p>`;
+  const nsec = 4 + Math.floor(rnd() * 3);
+  const used = new Set();
+  for (let s = 1; s <= nsec; s++) {
+    let t; do { t = pick(SECT); } while (used.has(t)); used.add(t);
+    html += `<h3>${ch}.${s} ${t}</h3>`;
+    const np = 2 + Math.floor(rnd() * 3);
+    for (let p = 0; p < np; p++) html += `<p>${para(3 + Math.floor(rnd() * 4))}</p>`;
+    if (s === 2) {
+      const v = [1, 2, 3, 4].map(() => 20 + Math.floor(rnd() * 120));
+      html += `<figure><svg role="img" width="420" height="160" viewBox="0 0 420 160"><text x="12" y="20" font-family="sans-serif" font-size="12" fill="#333">Fig. ${ch}.1 — ${topic}: passages per season</text>` +
+        v.map((h, i) => `<rect x="${40 + i * 95}" y="${150 - h}" width="60" height="${h}" fill="${['#2a9d8f', '#e76f51', '#e9c46a', '#264653'][i]}"/>`).join('') + `</svg><figcaption>Figure ${ch}.1. Passages per season for ${topic}.</figcaption></figure>`;
+    }
+    if (s === 3 && ch % 3 === 0) {
+      html += `<table><tr><th>Route</th><th>Distance</th><th>Days</th></tr>` + [1, 2, 3].map(i => `<tr><td>${topic} route ${i}</td><td>${(50 + rnd() * 900).toFixed(0)} nmi</td><td>${(1 + rnd() * 20).toFixed(0)}</td></tr>`).join('') + `</table>`;
+    }
+  }
+}
+main.insertAdjacentHTML('beforeend', html);
+document.title += ` · ${main.querySelectorAll('p').length} paragraphs`;
+</script>
+<script src="dev-loader.js"></script>
+</body></html>

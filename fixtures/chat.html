@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fixture · ChatGPT conversation (CSV parser project)</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #212121; color: #ececec; font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .app { display: grid; grid-template-columns: 240px 1fr; height: 100vh; overflow: hidden; }
+  .side { background: #171717; padding: 14px; font-size: 13px; color: #b4b4b4; }
+  .side h4 { margin: 0 0 8px; color: #8e8e8e; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  .side .conv { padding: 6px 8px; border-radius: 6px; }
+  .side .conv.cur { background: #2f2f2f; color: #fff; }
+  .main { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100vh; }
+  #thread { flex: 1; min-height: 0; overflow-y: auto; padding: 24px 0 140px; }
+  .msg { max-width: 760px; margin: 0 auto 26px; padding: 0 20px; }
+  .msg[data-message-author-role="user"] .bubble { margin-left: auto; max-width: 70%; background: #2f2f2f; border-radius: 18px; padding: 10px 18px; width: fit-content; }
+  .msg[data-message-author-role="assistant"] .bubble { padding: 4px 6px; }
+  .bubble p { margin: 0 0 12px; }
+  pre { background: #0d0d0d; border: 1px solid #333; border-radius: 8px; padding: 12px 14px; overflow-x: auto; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+  pre .hd { color: #8e8e8e; font-size: 11px; margin-bottom: 6px; }
+  table { border-collapse: collapse; margin: 6px 0 14px; font-size: 14px; }
+  th, td { border: 1px solid #444; padding: 6px 10px; text-align: left; }
+  th { background: #2a2a2a; }
+  svg[role="img"] { display: block; margin: 8px 0 14px; border-radius: 10px; }
+  h3 { font-size: 16px; margin: 14px 0 6px; }
+  .composer { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 20px 22px; background: linear-gradient(transparent, #212121 30%); }
+  .composer div { max-width: 760px; margin: 0 auto; background: #2f2f2f; border-radius: 24px; padding: 14px 20px; color: #8e8e8e; }
+  code { background: #333; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .note { max-width: 760px; margin: 0 auto 26px; padding: 12px 20px; color: #8e8e8e; font-size: 13px; border: 1px dashed #444; border-radius: 10px; }
+</style></head>
+<body>
+<div class="app">
+  <aside class="side">
+    <h4>Chats</h4>
+    <div class="conv cur">CSV parser project</div>
+    <div class="conv">Trip to Kyoto</div>
+    <div class="conv">Thesis outline</div>
+    <div class="conv">Regex help</div>
+    <p style="margin-top:30px;font-size:12px">Fixture page. Same DOM contract as chatgpt.com (<code>data-message-author-role</code>), so the extension treats it as the real thing. Labels are pre-computed in <code>data-label</code>.</p>
+  </aside>
+  <main class="main">
+    <div id="thread">
+      <div class="note">Test conversation · 36 turns · 4 code versions, 4 images, 3 tables · answers late in the thread reference earlier turns with <code>[turn N]</code> and <code>[ref: "…"]</code>.</div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: CSV parser with quotes"><div class="bubble">I'm building a CSV parser in Python. It needs to handle quoted fields that contain commas. Can you write a first version without using the csv module?</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="parser v1 · basic quotes"><div class="bubble">
+        <p>Here's a first version that walks the line character by character and tracks whether we're inside quotes:</p>
+        <pre data-label="parser v1 · basic quotes"><div class="hd">python</div><code class="language-python">def parse_line(line):
+    fields, cur, in_quotes = [], [], False
+    for ch in line:
+        if ch == '"':
+            in_quotes = not in_quotes
+        elif ch == ',' and not in_quotes:
+            fields.append(''.join(cur)); cur = []
+        else:
+            cur.append(ch)
+    fields.append(''.join(cur))
+    return fields
+
+def parse_csv(text):
+    return [parse_line(l) for l in text.splitlines() if l]</code></pre>
+        <p>This handles <code>a,"b,c",d</code> → <code>['a', 'b,c', 'd']</code>. It does not yet handle escaped quotes (<code>""</code>) or newlines inside quoted fields.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Bug: newline inside quotes"><div class="bubble">It breaks when a quoted field contains a newline. The row gets split in two.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="parser v2 · embedded newlines"><div class="bubble">
+        <p>Right — <code>splitlines()</code> runs before we know we're inside quotes. Version 2 parses the whole text as one stream and only ends a row on a newline that is <em>outside</em> quotes. It also handles the <code>""</code> escape:</p>
+        <pre data-label="parser v2 · embedded newlines"><div class="hd">python</div><code class="language-python">def parse_csv(text):
+    rows, fields, cur, in_quotes = [], [], [], False
+    i = 0
+    while i &lt; len(text):
+        ch = text[i]
+        if in_quotes:
+            if ch == '"' and text[i+1:i+2] == '"':
+                cur.append('"'); i += 1
+            elif ch == '"':
+                in_quotes = False
+            else:
+                cur.append(ch)
+        else:
+            if ch == '"':
+                in_quotes = True
+            elif ch == ',':
+                fields.append(''.join(cur)); cur = []
+            elif ch == '\n':
+                fields.append(''.join(cur)); rows.append(fields)
+                fields, cur = [], []
+            else:
+                cur.append(ch)
+        i += 1
+    if cur or fields:
+        fields.append(''.join(cur)); rows.append(fields)
+    return rows</code></pre>
+        <p>The state is now explicit: we're either in quotes or not, and every character is handled in exactly one branch.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: state machine diagram"><div class="bubble">Can you draw the state machine for that?</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="diagram · quote state machine"><div class="bubble">
+        <p>Here's the two-state machine the parser implements:</p>
+        <svg role="img" aria-label="State machine diagram: two states, OUTSIDE and IN QUOTES, with transitions on quote, comma and newline" data-label="diagram · quote state machine" width="560" height="220" viewBox="0 0 560 220" style="background:#fafafa">
+          <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#333"/></marker></defs>
+          <circle cx="130" cy="110" r="56" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2"/><text x="130" y="106" text-anchor="middle" font-size="15" font-weight="700" fill="#1e3a8a">OUTSIDE</text><text x="130" y="126" text-anchor="middle" font-size="11" fill="#1e3a8a">, → new field</text>
+          <circle cx="430" cy="110" r="56" fill="#fee2e2" stroke="#b91c1c" stroke-width="2"/><text x="430" y="106" text-anchor="middle" font-size="15" font-weight="700" fill="#7f1d1d">IN QUOTES</text><text x="430" y="126" text-anchor="middle" font-size="11" fill="#7f1d1d">"" → literal "</text>
+          <path d="M186,90 Q280,40 374,90" fill="none" stroke="#333" stroke-width="2" marker-end="url(#ar)"/><text x="280" y="55" text-anchor="middle" font-size="12" fill="#333">"</text>
+          <path d="M374,130 Q280,180 186,130" fill="none" stroke="#333" stroke-width="2" marker-end="url(#ar)"/><text x="280" y="175" text-anchor="middle" font-size="12" fill="#333">" (not followed by ")</text>
+          <path d="M100,60 Q60,10 120,50" fill="none" stroke="#333" stroke-width="1.5" marker-end="url(#ar)"/><text x="70" y="22" font-size="11" fill="#333">\n → new row</text>
+        </svg>
+        <p>Newlines and commas are only structural in the left state. In the right state everything is literal except the quote character.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: edge-case table"><div class="bubble">Give me a table of the edge cases and what each version does.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="table · edge cases v1 vs v2"><div class="bubble">
+        <table data-label="table · edge cases v1 vs v2"><tr><th>Input</th><th>v1</th><th>v2</th></tr>
+          <tr><td><code>a,"b,c",d</code></td><td>✅</td><td>✅</td></tr>
+          <tr><td><code>"say ""hi"""</code></td><td>❌ drops quotes</td><td>✅ <code>say "hi"</code></td></tr>
+          <tr><td><code>"line1\nline2",x</code></td><td>❌ splits row</td><td>✅ one field</td></tr>
+          <tr><td>trailing comma <code>a,b,</code></td><td>✅ empty field</td><td>✅ empty field</td></tr>
+          <tr><td>BOM at file start</td><td>❌ in first field</td><td>❌ in first field</td></tr>
+          <tr><td><code>1,2.5,true</code> typed</td><td>strings</td><td>strings</td></tr></table>
+        <p>Two open items: the byte-order mark and type inference.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: red bicycle logo"><div class="bubble">Unrelated: make a simple logo for the project — a red bicycle, flat style.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="logo · red bicycle"><div class="bubble">
+        <svg role="img" aria-label="Generated image: flat-style logo of a red bicycle on a cream background" data-label="logo · red bicycle" width="360" height="220" viewBox="0 0 360 220" style="background:#fdf6e3">
+          <circle cx="90" cy="150" r="48" fill="none" stroke="#d62828" stroke-width="10"/><circle cx="270" cy="150" r="48" fill="none" stroke="#d62828" stroke-width="10"/>
+          <path d="M90,150 L150,60 L230,60 L270,150 L180,150 Z M150,60 L180,150" fill="none" stroke="#d62828" stroke-width="10" stroke-linejoin="round"/>
+          <path d="M140,60 L165,60 M225,45 L235,60" stroke="#d62828" stroke-width="10" stroke-linecap="round"/>
+          <text x="180" y="205" text-anchor="middle" font-size="18" font-weight="700" fill="#d62828" font-family="sans-serif">quickcsv</text>
+        </svg>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: make it blue"><div class="bubble">Nice. Make it blue instead, and drop the text.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="logo · blue bicycle, no text"><div class="bubble">
+        <svg role="img" aria-label="Generated image: flat-style logo of a blue bicycle, no text" data-label="logo · blue bicycle, no text" width="360" height="200" viewBox="0 0 360 200" style="background:#eef4ff">
+          <circle cx="90" cy="140" r="48" fill="none" stroke="#1d4ed8" stroke-width="10"/><circle cx="270" cy="140" r="48" fill="none" stroke="#1d4ed8" stroke-width="10"/>
+          <path d="M90,140 L150,50 L230,50 L270,140 L180,140 Z M150,50 L180,140" fill="none" stroke="#1d4ed8" stroke-width="10" stroke-linejoin="round"/>
+          <path d="M140,50 L165,50 M225,35 L235,50" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"/>
+        </svg>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: type inference"><div class="bubble">Back to the parser. Add type inference: ints, floats, booleans, everything else stays a string.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="parser v3 · type inference"><div class="bubble">
+        <p>Version 3 keeps the same scanner and adds a <code>coerce()</code> step applied to every field:</p>
+        <pre data-label="parser v3 · type inference"><div class="hd">python</div><code class="language-python">def coerce(s):
+    if s in ('true', 'false'):
+        return s == 'true'
+    try:
+        return int(s)
+    except ValueError:
+        pass
+    try:
+        return float(s)
+    except ValueError:
+        return s
+
+def parse_csv(text, typed=True):
+    rows, fields, cur, in_quotes = [], [], [], False
+    i = 0
+    while i &lt; len(text):
+        ch = text[i]
+        if in_quotes:
+            if ch == '"' and text[i+1:i+2] == '"':
+                cur.append('"'); i += 1
+            elif ch == '"':
+                in_quotes = False
+            else:
+                cur.append(ch)
+        else:
+            if ch == '"':
+                in_quotes = True
+            elif ch == ',':
+                fields.append(''.join(cur)); cur = []
+            elif ch == '\n':
+                fields.append(''.join(cur)); rows.append(fields)
+                fields, cur = [], []
+            else:
+                cur.append(ch)
+        i += 1
+    if cur or fields:
+        fields.append(''.join(cur)); rows.append(fields)
+    if typed:
+        rows = [[coerce(f) for f in r] for r in rows]
+    return rows</code></pre>
+        <p>Quoted fields are still coerced — if you want <code>"42"</code> to stay a string, we'd need to remember which fields were quoted.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: benchmarks"><div class="bubble">How does it compare to the csv module for speed? Give me rough numbers.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="table · benchmark numbers"><div class="bubble">
+        <p>Rough numbers on a 100 MB file (1M rows × 12 columns), CPython 3.12, single core:</p>
+        <table data-label="table · benchmark numbers"><tr><th>Parser</th><th>Time</th><th>Rows/s</th></tr>
+          <tr><td>csv module (C)</td><td>1.9 s</td><td>530k</td></tr>
+          <tr><td>v2 (pure Python)</td><td>38 s</td><td>26k</td></tr>
+          <tr><td>v3 typed</td><td>51 s</td><td>20k</td></tr>
+          <tr><td>v3 typed=False</td><td>39 s</td><td>26k</td></tr></table>
+        <p>The character loop is the cost. If speed matters, scan with a compiled regex for the unquoted fast path and only fall back to the loop for quoted fields.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: bar chart of benchmarks"><div class="bubble">Plot that as a bar chart.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="chart · benchmark bars"><div class="bubble">
+        <svg role="img" aria-label="Generated image: bar chart of parse time in seconds for csv module, v2, v3 typed and v3 untyped" data-label="chart · benchmark bars" width="520" height="260" viewBox="0 0 520 260" style="background:#fff">
+          <text x="260" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="#222" font-family="sans-serif">Parse time, 100 MB (seconds)</text>
+          <line x1="60" y1="220" x2="500" y2="220" stroke="#999"/>
+          <rect x="90" y="211" width="70" height="9" fill="#2a9d8f"/><text x="125" y="240" text-anchor="middle" font-size="11" fill="#333" font-family="sans-serif">csv (C) 1.9</text>
+          <rect x="200" y="42" width="70" height="178" fill="#e76f51"/><text x="235" y="240" text-anchor="middle" font-size="11" fill="#333" font-family="sans-serif">v2 38</text>
+          <rect x="310" y="-19" width="70" height="239" fill="#e9c46a"/><text x="345" y="240" text-anchor="middle" font-size="11" fill="#333" font-family="sans-serif">v3 typed 51</text>
+          <rect x="420" y="37" width="70" height="183" fill="#f4a261"/><text x="455" y="240" text-anchor="middle" font-size="11" fill="#333" font-family="sans-serif">v3 untyped 39</text>
+        </svg>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: Unicode BOM"><div class="bubble">What's the deal with the BOM issue from the table?</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="explain · byte-order mark"><div class="bubble">
+        <p>Files exported from Excel as "CSV UTF-8" start with the bytes <code>EF BB BF</code>, the UTF-8 byte-order mark. When you read the file as UTF-8, that becomes the invisible character <code>﻿</code> at the start of the first field, so <code>"id"</code> becomes <code>"﻿id"</code> and header lookups fail.</p>
+        <p>Two fixes: open the file with <code>encoding="utf-8-sig"</code>, which strips it, or strip <code>﻿</code> from the start of the text yourself before parsing. The second is safer if you don't control how the file was opened.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: strip BOM in code"><div class="bubble">OK, update the parser to strip the BOM.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="parser v4 · BOM stripping"><div class="bubble">
+        <p>This is the same scanner as the typed version in [turn 14], with one line added at the top and the quoted-field tracking so quoted numbers stay strings:</p>
+        <pre data-label="parser v4 · BOM stripping"><div class="hd">python</div><code class="language-python">BOM = '﻿'
+
+def parse_csv(text, typed=True):
+    if text.startswith(BOM):
+        text = text[1:]
+    rows, fields, cur, in_quotes, quoted = [], [], [], False, []
+    was_quoted = False
+    i = 0
+    while i &lt; len(text):
+        ch = text[i]
+        if in_quotes:
+            if ch == '"' and text[i+1:i+2] == '"':
+                cur.append('"'); i += 1
+            elif ch == '"':
+                in_quotes = False
+            else:
+                cur.append(ch)
+        else:
+            if ch == '"':
+                in_quotes = True; was_quoted = True
+            elif ch == ',':
+                fields.append(''.join(cur)); quoted.append(was_quoted)
+                cur, was_quoted = [], False
+            elif ch == '\n':
+                fields.append(''.join(cur)); quoted.append(was_quoted)
+                rows.append([f if q or not typed else coerce(f) for f, q in zip(fields, quoted)])
+                fields, quoted, cur, was_quoted = [], [], [], False
+            else:
+                cur.append(ch)
+        i += 1
+    if cur or fields:
+        fields.append(''.join(cur)); quoted.append(was_quoted)
+        rows.append([f if q or not typed else coerce(f) for f, q in zip(fields, quoted)])
+    return rows</code></pre>
+        <p><code>coerce()</code> is unchanged from [turn 14].</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: write tests"><div class="bubble">Write pytest tests for v4.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="tests · pytest for v4"><div class="bubble">
+        <pre data-label="tests · pytest for v4"><div class="hd">python</div><code class="language-python">import pytest
+from quickcsv import parse_csv
+
+def test_quoted_comma():
+    assert parse_csv('a,"b,c",d') == [['a', 'b,c', 'd']]
+
+def test_escaped_quote():
+    assert parse_csv('"say ""hi"""') == [['say "hi"']]
+
+def test_embedded_newline():
+    assert parse_csv('"line1\nline2",x') == [['line1\nline2', 'x']]
+
+def test_bom_stripped():
+    assert parse_csv('﻿id,name\n1,ann') == [['id', 'name'], [1, 'ann']]
+
+def test_quoted_number_stays_string():
+    assert parse_csv('"42",42') == [['42', 42]]
+
+@pytest.mark.parametrize('s,v', [('true', True), ('2.5', 2.5), ('x', 'x')])
+def test_coerce(s, v):
+    assert parse_csv(s)[0][0] == v</code></pre>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: which version handles newlines?"><div class="bubble">I lost track — which version was the one that fixed the newline problem?</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="recap · newline fix was v2"><div class="bubble">
+        <p>That was the second version, in [turn 4]. The key change was parsing the whole text as one stream instead of calling <code>splitlines()</code> first — the state machine in [turn 6] shows why: a newline only ends a row in the OUTSIDE state.</p>
+        <p>Every version after that ([turn 14], [turn 22]) keeps the same scanner, so they all handle embedded newlines.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: diff v2 vs v4"><div class="bubble">What's actually different between v2 and v4? Just the diff, in words.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="explain · v2 → v4 changes"><div class="bubble">
+        <p>Three things changed between [turn 4] and [turn 22]:</p>
+        <p>1. <b>BOM strip</b> — one <code>startswith</code> check at the top.<br>2. <b>Type inference</b> — <code>coerce()</code> from [turn 14] applied per field.<br>3. <b>Quoted tracking</b> — a parallel <code>quoted</code> list so <code>"42"</code> stays a string while <code>42</code> becomes an int. This is the part the edge-case table in [ref: "1,2.5,true"] didn't cover yet.</p>
+        <p>The scanning loop itself is byte-for-byte the same.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: README"><div class="bubble">Write a short README for the repo.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="README draft"><div class="bubble">
+        <h3>quickcsv</h3>
+        <p>A tiny dependency-free CSV parser for when you can't use the standard library (sandboxed environments, teaching, or embedding in a single file).</p>
+        <p><b>Features.</b> Quoted fields with commas, escaped quotes (<code>""</code>), embedded newlines, UTF-8 BOM stripping, optional type inference (int / float / bool), quoted values are never coerced.</p>
+        <p><b>Usage.</b> <code>from quickcsv import parse_csv; rows = parse_csv(open('f.csv', encoding='utf-8').read())</code></p>
+        <p><b>Performance.</b> About 20× slower than the C <code>csv</code> module — see the benchmark table in [turn 16]. Fine for files under ~10 MB.</p>
+        <p><b>Tests.</b> <code>pytest</code>, six cases covering every row of the edge-case table.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: logo section in README"><div class="bubble">Add a section about the logo — use the second one.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="README · logo section"><div class="bubble">
+        <p><b>Logo.</b> The project mark is the blue bicycle from [turn 12] (the earlier red version with the wordmark in [turn 10] is kept in <code>assets/legacy/</code>). It's a 360×200 SVG; use it at 48 px or larger so the frame stays readable.</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: quote inside quoted field"><div class="bubble">One more: how exactly does v4 handle a quote character inside a quoted field?</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="explain · escaped quote handling"><div class="bubble">
+        <p>Inside quotes, the scanner in [ref: "text[i+1:i+2]"] looks one character ahead. If the next character is also a quote, it emits a single literal quote and skips both; otherwise the quote closes the field. That's this branch:</p>
+        <pre data-label="snippet · quote look-ahead"><div class="hd">python</div><code class="language-python">if ch == '"' and text[i+1:i+2] == '"':
+    cur.append('"'); i += 1
+elif ch == '"':
+    in_quotes = False</code></pre>
+        <p>So <code>"say ""hi"""</code> → <code>say "hi"</code>, matching row 2 of the table in [turn 8].</p>
+      </div></div>
+
+      <div class="msg" data-message-author-role="user" data-label="Ask: summarize everything"><div class="bubble">Summarize everything we did in this chat.</div></div>
+
+      <div class="msg" data-message-author-role="assistant" data-label="summary · whole project"><div class="bubble">
+        <p><b>Parser.</b> Four versions: v1 basic quotes [turn 2] → v2 stream parsing with embedded newlines [turn 4] → v3 type inference [turn 14] → v4 BOM stripping and quoted-value tracking [turn 22]. Tests in [turn 24].</p>
+        <p><b>Diagrams and tables.</b> A state-machine diagram [turn 6], an edge-case table [turn 8], benchmark numbers [turn 16] and their bar chart [turn 18].</p>
+        <p><b>Logo.</b> Red bicycle with wordmark [turn 10], then the blue text-free version [turn 12] that the README uses.</p>
+        <p><b>Docs.</b> README draft [turn 30] plus the logo section [turn 32].</p>
+      </div></div>
+    </div>
+    <div class="composer"><div>Message ChatGPT…</div></div>
+  </main>
+</div>
+<script src="dev-loader.js"></script>
+</body></html>

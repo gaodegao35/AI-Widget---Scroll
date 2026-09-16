@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Scroll Widgets · fixtures</title>
+<style>
+  body { font: 15px/1.6 -apple-system, system-ui, sans-serif; max-width: 720px; margin: 60px auto; padding: 0 20px; color: #222; }
+  a.card { display: block; padding: 14px 16px; border: 1px solid #ddd; border-radius: 10px; margin: 12px 0; color: inherit; text-decoration: none; }
+  a.card:hover { border-color: #7c5cff; } a.card b { display: block; font-size: 17px; }
+  kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid #bbb; border-radius: 3px; padding: 1px 5px; }
+  code { background: #f2f2f2; padding: 1px 4px; border-radius: 3px; }
+</style></head>
+<body>
+<h1>Scroll Widgets · test pages</h1>
+<p>Load the unpacked extension from <code>extension/</code> first (chrome://extensions → Developer mode → Load unpacked). These pages are served from <code>localhost</code>, which the extension matches automatically.</p>
+<a class="card" href="chat.html"><b>ChatGPT conversation</b>36 turns, 4 code versions, 4 images, 3 tables. Same DOM contract as chatgpt.com. Use for all three prototypes.</a>
+<a class="card" href="article.html"><b>Long article</b>Headings, figures, a table, a code block. Use for P1 (find / markers / ticker) and P3 (pins).</a>
+<a class="card" href="document.html"><b>Generated book (24 chapters, ~400 paragraphs)</b>Stress test for lazy labeling: chapter markers appear instantly; nothing is labeled until you get near it.</a>
+<h3>Shortcuts</h3>
+<p><kbd>⌘⇧F</kbd> find by meaning · <kbd>⌘[</kbd> back to where you were · <kbd>⌘]</kbd> forward · select any text → <b>Find related</b> / <b>Pin</b> · hover a code block / image / table → <b>📌 Pin</b> · click <b>⚙</b> on the rail to switch prototype (P1 / P2 / P3).</p>
+</body></html>

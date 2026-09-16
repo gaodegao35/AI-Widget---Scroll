@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Scroll Widgets — AI Widgets (Scrolling)",
+  "version": "0.1.0",
+  "description": "Three janky prototypes for intelligent scrolling: P1 Where is it? · P2 Take me there & bring me back · P3 Two places at once.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["https://api.anthropic.com/*"],
+  "action": { "default_title": "Scroll Widgets — activate on this page" },
+  "options_page": "options.html",
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": [
+        "src/00-util.js",
+        "src/01-adapters.js",
+        "src/02-labeler.js",
+        "src/03-waypoints.js",
+        "src/04-rail.js",
+        "src/05-find.js",
+        "src/06-ticker.js",
+        "src/07-pins.js",
+        "src/08-refs.js",
+        "src/09-main.js"
+      ],
+      "css": ["src/widget.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

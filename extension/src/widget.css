@@ -1,0 +1,113 @@
+/* Scroll Widgets — all UI is prefixed .sw- and lives above the page */
+.sw-ui { --sw-bg: rgba(24, 24, 28, 0.94); --sw-fg: #f3f3f5; --sw-dim: #a9a9b3; --sw-acc: #7c5cff; --sw-hit: #ffb547;
+  font: 12.5px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--sw-fg);
+  z-index: 2147483000; box-sizing: border-box; }
+.sw-ui *, .sw-ui *::before, .sw-ui *::after { box-sizing: border-box; }
+.sw-ui[hidden] { display: none !important; }
+.sw-ui button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.sw-ui kbd { font: 10px/1 ui-monospace, Menlo, monospace; color: var(--sw-dim); border: 1px solid #555; border-radius: 3px; padding: 1px 4px; margin-left: 8px; }
+
+/* ---- rail ---- */
+.sw-rail { position: fixed; width: 22px; display: flex; flex-direction: column; background: rgba(24,24,28,0.55); backdrop-filter: blur(6px);
+  border-left: 1px solid rgba(255,255,255,0.08); }
+.sw-rail-tools { display: flex; flex-direction: column; align-items: center; padding: 4px 0; gap: 2px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.sw-tool { width: 18px; height: 18px; border-radius: 4px; font-size: 11px; line-height: 18px; text-align: center; color: var(--sw-dim); }
+.sw-tool:hover { background: rgba(255,255,255,0.12); color: var(--sw-fg); }
+.sw-rail-track { position: relative; flex: 1; cursor: pointer; }
+.sw-rail-markers { position: absolute; inset: 0; }
+.sw-rail-thumb { position: absolute; left: 2px; right: 2px; background: rgba(255,255,255,0.22); border-radius: 3px; pointer-events: none; }
+.sw-marker { position: absolute; right: 2px; width: 10px; height: 3px; border-radius: 2px; background: #8a8a95; transform: translateY(-50%); cursor: pointer; transition: width .12s; }
+.sw-marker:hover { width: 16px; }
+.sw-t-prompt { background: #62b3ff; }
+.sw-t-answer { background: #6b6b75; width: 6px; }
+.sw-t-code { background: #52d19a; }
+.sw-t-image { background: #ff7ad9; height: 5px; }
+.sw-t-table { background: #ffd166; }
+.sw-t-heading { background: #c9c9d3; }
+.sw-t-heading.sw-h1, .sw-t-heading.sw-h2 { width: 14px; height: 3px; }
+.sw-t-heading.sw-h3, .sw-t-heading.sw-h4 { width: 8px; height: 2px; }
+.sw-t-para { background: var(--sw-hit); width: 6px; }
+.sw-marker.sw-hit { background: var(--sw-hit); width: 16px; height: 4px; box-shadow: 0 0 0 2px rgba(255,181,71,0.35); }
+.sw-nomarkers .sw-marker:not(.sw-hit) { display: none; }
+
+/* lens (hover popover next to the rail) */
+.sw-lens { position: fixed; min-width: 220px; max-width: 340px; background: var(--sw-bg); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 4px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+.sw-lens-row { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+.sw-lens-row:hover { background: rgba(255,255,255,0.1); }
+.sw-lens-row.sw-focus { background: rgba(124,92,255,0.28); }
+.sw-lens-row.sw-hit .sw-lens-label { color: var(--sw-hit); }
+.sw-lens-ic { width: 16px; text-align: center; flex: none; font-size: 12px; }
+.sw-lens-label { overflow: hidden; text-overflow: ellipsis; }
+.sw-lens-turn { margin-left: auto; color: var(--sw-dim); font-size: 10.5px; }
+.sw-lens-excerpt { color: var(--sw-dim); padding: 6px 6px 2px; white-space: normal; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 3px; font-size: 11.5px; }
+.sw-lens-src { color: #6f6f7a; padding: 2px 6px 4px; font-size: 10px; }
+
+/* ---- waypoint pill ---- */
+.sw-pill { position: fixed; display: flex; gap: 6px; }
+.sw-pill-btn { display: flex; align-items: center; gap: 4px; background: var(--sw-bg); border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; padding: 7px 12px 7px 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); max-width: 380px; }
+.sw-pill-btn b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sw-pill-btn:hover { border-color: var(--sw-acc); }
+.sw-pill-arrow { color: var(--sw-acc); font-size: 14px; }
+
+/* ---- flash highlight on the jump target ---- */
+.sw-flash { animation: sw-flash 2.6s ease-out; outline: 2px solid var(--sw-acc); outline-offset: 4px; border-radius: 6px; }
+@keyframes sw-flash { 0% { background-color: rgba(124,92,255,0.35); } 100% { background-color: transparent; outline-color: transparent; } }
+
+/* ---- find box ---- */
+.sw-find { position: fixed; width: 520px; max-width: calc(100vw - 60px); background: var(--sw-bg); border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); padding: 8px; }
+.sw-find-row { display: flex; align-items: center; gap: 6px; }
+.sw-find-input { flex: 1; font: 14px inherit; font-family: inherit; color: var(--sw-fg); background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 7px 10px; outline: none; }
+.sw-find-input:focus { border-color: var(--sw-acc); }
+.sw-find-count { color: var(--sw-dim); min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+.sw-find-list { max-height: 300px; overflow: auto; margin-top: 6px; }
+.sw-find-item { display: flex; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.sw-find-item:hover { background: rgba(255,255,255,0.08); }
+.sw-find-item.sw-cur { background: rgba(255,181,71,0.18); }
+.sw-find-label { font-weight: 600; }
+.sw-find-ex { color: var(--sw-dim); font-size: 11.5px; }
+.sw-find-ex mark { background: rgba(255,181,71,0.35); color: var(--sw-fg); border-radius: 2px; padding: 0 1px; }
+.sw-find-note { color: #6f6f7a; font-size: 10.5px; padding: 6px 8px 0; }
+
+/* selection popover */
+.sw-selpop { position: fixed; display: flex; gap: 2px; background: var(--sw-bg); border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 3px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+.sw-selbtn { padding: 5px 9px; border-radius: 5px; white-space: nowrap; }
+.sw-selbtn:hover { background: rgba(255,255,255,0.12); }
+
+/* ---- ticker ---- */
+.sw-ticker { position: fixed; transform: translate(-50%, -50%); text-align: center; pointer-events: none; background: var(--sw-bg); border-radius: 14px; padding: 12px 22px; box-shadow: 0 12px 40px rgba(0,0,0,0.45); min-width: 260px; max-width: 70vw; }
+.sw-ticker-main { font-size: 20px; font-weight: 700; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sw-ticker-side { color: var(--sw-dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- pins ---- */
+.sw-pinbtn { position: fixed; background: var(--sw-bg); border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; padding: 4px 9px; box-shadow: 0 4px 14px rgba(0,0,0,0.3); font-size: 12px; }
+.sw-pinbtn:hover { border-color: var(--sw-acc); }
+.sw-pinpane { position: fixed; background: var(--sw-bg); border: 1px solid rgba(255,255,255,0.14); border-radius: 12px 12px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; }
+.sw-pingrip { height: 10px; cursor: ns-resize; flex: none; }
+.sw-pingrip::after { content: ''; display: block; width: 44px; height: 4px; margin: 3px auto; border-radius: 2px; background: rgba(255,255,255,0.25); }
+.sw-pinslots { flex: 1; display: grid; grid-template-columns: 1fr; gap: 8px; padding: 0 10px 10px; min-height: 0; }
+.sw-two .sw-pinslots { grid-template-columns: 1fr 1fr; }
+.sw-pinslot { display: flex; flex-direction: column; min-height: 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.04); }
+.sw-pinhead { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); flex: none; }
+.sw-pinlabel { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.sw-mini { padding: 3px 7px; border-radius: 5px; background: rgba(255,255,255,0.08); font-size: 11px; white-space: nowrap; }
+.sw-mini:hover { background: rgba(255,255,255,0.16); }
+.sw-suggest { color: var(--sw-hit); }
+.sw-pinbody { overflow: auto; padding: 8px 10px; color: #e8e8ec; font-size: 13px; line-height: 1.45; }
+.sw-pinbody img, .sw-pinbody svg { max-width: 100%; height: auto; }
+.sw-pinbody pre { margin: 0; white-space: pre; font: 12px/1.45 ui-monospace, Menlo, monospace; }
+.sw-pinbody table { border-collapse: collapse; } .sw-pinbody td, .sw-pinbody th { border: 1px solid rgba(255,255,255,0.15); padding: 3px 6px; }
+.sw-pinquote { margin: 0; padding-left: 10px; border-left: 3px solid var(--sw-acc); }
+.sw-spacer { width: 1px; }
+
+/* ---- reference chips (inside the page's own text) ---- */
+.sw-ref { display: inline-flex; align-items: center; gap: 3px; background: rgba(124,92,255,0.16); color: inherit; border: 1px solid rgba(124,92,255,0.5); border-radius: 999px; padding: 0 8px 0 6px; margin: 0 2px; text-decoration: none; font-size: 0.92em; white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; vertical-align: baseline; cursor: pointer; }
+.sw-ref:hover { background: rgba(124,92,255,0.32); }
+.sw-ref-arrow { color: #7c5cff; font-weight: 700; }
+.sw-ref-implicit { border-style: dashed; }
+
+/* ---- settings menu ---- */
+.sw-menu { position: fixed; width: 360px; background: var(--sw-bg); border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; padding: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+.sw-menu-title { font-weight: 700; padding: 4px 6px 8px; }
+.sw-menu-sub { color: var(--sw-dim); font-size: 11px; padding: 8px 6px 2px; }
+.sw-menu-row { display: block; padding: 4px 6px; border-radius: 5px; cursor: pointer; }
+.sw-menu-row:hover { background: rgba(255,255,255,0.08); }

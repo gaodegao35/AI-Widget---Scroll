@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fixture · A short history of the scrollbar</title>
+<style>
+  body { margin: 0; background: #fff; color: #1a1a1a; font: 17px/1.65 Georgia, "Times New Roman", serif; }
+  header { border-bottom: 1px solid #ddd; padding: 20px 0; font: 13px -apple-system, system-ui, sans-serif; color: #777; }
+  header, article { max-width: 700px; margin: 0 auto; padding-left: 20px; padding-right: 20px; }
+  h1 { font-size: 38px; line-height: 1.15; margin: 40px 0 8px; }
+  .dek { color: #666; font-size: 19px; margin-bottom: 36px; }
+  h2 { font-size: 26px; margin: 48px 0 10px; }
+  h3 { font-size: 19px; margin: 30px 0 6px; font-family: -apple-system, system-ui, sans-serif; }
+  figure { margin: 24px 0; } figcaption { font: 13px/1.4 -apple-system, system-ui, sans-serif; color: #666; margin-top: 8px; }
+  svg { display: block; max-width: 100%; border: 1px solid #e5e5e5; border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; font: 14px/1.4 -apple-system, system-ui, sans-serif; margin: 16px 0; }
+  th, td { border: 1px solid #ddd; padding: 7px 10px; text-align: left; } th { background: #f5f5f5; }
+  pre { background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 6px; padding: 12px 14px; font: 13px/1.5 ui-monospace, Menlo, monospace; overflow-x: auto; }
+  blockquote { margin: 20px 0; padding-left: 16px; border-left: 3px solid #ccc; color: #444; }
+  footer { max-width: 700px; margin: 60px auto; padding: 20px; color: #777; font: 13px -apple-system, system-ui, sans-serif; border-top: 1px solid #ddd; }
+</style></head>
+<body>
+<header>Fixture page · long article · headings, figures, a table and code, so the rail has landmarks to label</header>
+<article>
+<h1>A short history of the scrollbar</h1>
+<p class="dek">How a strip of pixels invented in the 1970s became the most-used and least-examined control on every screen.</p>
+
+<h2>Before the scrollbar</h2>
+<p>Early text terminals had no notion of a document larger than the screen. Whatever scrolled off the top was gone, and "scrolling" meant exactly what it meant for parchment: the text moved and the reader waited. Line editors like <code>ed</code> let you print a range of lines, but nothing on the screen told you where those lines were in the file, how much came before them, or how much came after.</p>
+<p>The first systems to show a document as a window onto something larger appeared at Xerox PARC and at SRI. Engelbart's NLS could jump to any statement by number, and it had a mouse, but its viewport was still navigated by command. The problem the scrollbar would solve — showing position and extent, and letting the user move directly — was recognized before the widget itself existed.</p>
+<p>What made the difference was the bitmapped display. Once the screen could show arbitrary pixels, a control could be drawn that represented the document as a whole, and the visible part as a fraction of it. That representation is the whole idea of the scrollbar: a map, not just a button.</p>
+
+<h2>Smalltalk and the Alto</h2>
+<p>The scrollbar as we know it appeared in Smalltalk-76 on the Xerox Alto. It sat to the left of the text pane, appeared only when the cursor entered it, and had no arrows. Clicking in the bar with different mouse buttons scrolled up, scrolled down, or jumped to the proportional position — three actions in one strip, which is more than most scrollbars do today.</p>
+<figure>
+<svg role="img" width="660" height="240" viewBox="0 0 660 240" style="background:#f4f4f0">
+  <rect x="40" y="30" width="18" height="180" fill="#ddd" stroke="#888"/><rect x="42" y="70" width="14" height="50" fill="#666"/>
+  <rect x="70" y="30" width="540" height="180" fill="#fff" stroke="#888"/>
+  <g font-family="monospace" font-size="12" fill="#333"><text x="80" y="55">Smalltalk-76 text pane</text><text x="80" y="80">the scroll bar lives on the LEFT and</text><text x="80" y="100">only appears when the cursor is over it</text><text x="80" y="140">thumb size = fraction of document visible</text></g>
+  <text x="40" y="228" font-family="sans-serif" font-size="11" fill="#666">Fig. 1 — the Alto's left-hand scrollbar</text>
+</svg>
+<figcaption>Figure 1. Reconstruction of the Smalltalk-76 scrollbar. The thumb's height shows how much of the document is visible — the "map" idea.</figcaption>
+</figure>
+<p>Two design decisions from this period stuck. The first is the proportional thumb: its length encodes the ratio of viewport to document, so a tiny thumb tells you the document is long before you scroll anywhere. The second is that dragging the thumb is a direct manipulation of position, not a request to move by an amount. Everything else — arrows, paging regions, wheel support — is an addition.</p>
+<h3>Why the left side?</h3>
+<p>On the Alto the bar sat on the left because the text was left-aligned and the cursor spent most of its time there. The Star and later the Lisa moved it to the right, partly to keep the left margin clean and partly because right-handed mouse users found the right edge easier to reach. The convention has been on the right ever since, which is a good reminder that a lot of "obvious" interface layout is a historical accident.</p>
+
+<h2>The Macintosh and the arrows</h2>
+<p>The 1984 Macintosh gave the scrollbar the form most people still picture: a vertical trough, a square thumb, and an arrow button at each end. The arrows scroll by a line; clicking in the trough scrolls by a page; dragging the thumb scrolls proportionally. Apple's Human Interface Guidelines fixed these behaviors precisely, and Windows copied them almost exactly a year later.</p>
+<p>The arrows exist because the Mac had a one-button mouse and no wheel. Fine control needed a target you could click repeatedly. On modern hardware the arrows are mostly vestigial — most systems now hide them by default — but their behaviour lives on in the arrow keys, which still scroll by a line in most views.</p>
+<table>
+<tr><th>System</th><th>Year</th><th>Side</th><th>Arrows</th><th>Proportional thumb</th><th>Auto-hide</th></tr>
+<tr><td>Smalltalk-76 (Alto)</td><td>1976</td><td>left</td><td>no</td><td>yes</td><td>yes</td></tr>
+<tr><td>Xerox Star</td><td>1981</td><td>right</td><td>yes</td><td>no</td><td>no</td></tr>
+<tr><td>Apple Lisa</td><td>1983</td><td>right</td><td>yes</td><td>no</td><td>no</td></tr>
+<tr><td>Macintosh System 1</td><td>1984</td><td>right</td><td>yes</td><td>no (fixed)</td><td>no</td></tr>
+<tr><td>Windows 95</td><td>1995</td><td>right</td><td>yes</td><td>yes</td><td>no</td></tr>
+<tr><td>Mac OS X Lion</td><td>2011</td><td>right</td><td>no</td><td>yes</td><td>yes</td></tr>
+<tr><td>iOS</td><td>2007</td><td>right</td><td>no</td><td>yes</td><td>yes (indicator only)</td></tr>
+</table>
+<p>Notice that the proportional thumb, invented first, disappeared for a decade and came back. The early Macintosh thumb was a fixed square because computing the ratio was considered confusing; Windows 95 reintroduced it, and it has been standard since.</p>
+
+<h2>The wheel changes everything</h2>
+<p>The Microsoft IntelliMouse (1996) added a wheel between the buttons. It was designed for zooming in Excel and was almost cut from the product; scrolling was the secondary use. Within a few years it had become the primary way most people scroll on a desktop, and the scrollbar became something you look at rather than something you touch.</p>
+<p>This shift matters for design. When the bar is the control, it has to be big enough to hit. When the wheel is the control, the bar only needs to be big enough to read. Auto-hiding scrollbars — which the Alto had in 1976 and Mac OS X Lion reintroduced in 2011 — are a direct consequence: if you rarely click the bar, it can get out of the way.</p>
+<blockquote>The wheel made the scrollbar an indicator with a control attached, rather than a control with an indicator attached.</blockquote>
+<h3>Acceleration and inertia</h3>
+<p>Wheel scrolling introduced the question of how far one notch should move the page. Early drivers used a fixed three lines. Later ones added acceleration — faster spinning moves further per notch — and touchpads added inertia, so a flick keeps the page moving after the fingers leave. Both make long distances fast at the cost of precision near the target, which is exactly the overshoot problem users complain about.</p>
+
+<h2>Touch, flicking and the disappearing bar</h2>
+<p>On the iPhone (2007) the scrollbar stopped being a control at all. You drag the content directly; the thin indicator on the right appears while you move and fades when you stop. Flicking gives inertia; touching the screen stops the motion. The gesture vocabulary is rich, but the map is gone — the indicator shows position, not content.</p>
+<figure>
+<svg role="img" width="660" height="220" viewBox="0 0 660 220" style="background:#fff">
+  <g font-family="sans-serif" font-size="12" fill="#333">
+    <rect x="30" y="30" width="180" height="160" rx="12" fill="#f7f7f7" stroke="#999"/><rect x="200" y="60" width="4" height="40" rx="2" fill="#999"/><text x="60" y="110">drag content</text>
+    <rect x="240" y="30" width="180" height="160" rx="12" fill="#f7f7f7" stroke="#999"/><rect x="410" y="40" width="4" height="20" rx="2" fill="#999"/><text x="270" y="110">flick: inertia</text><path d="M330,150 L330,70" stroke="#c33" stroke-width="3" marker-end="url(#a2)"/>
+    <rect x="450" y="30" width="180" height="160" rx="12" fill="#f7f7f7" stroke="#999"/><rect x="620" y="90" width="4" height="30" rx="2" fill="#999"/><text x="480" y="110">touch to stop</text><circle cx="540" cy="150" r="12" fill="none" stroke="#c33" stroke-width="3"/>
+  </g>
+  <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#c33"/></marker></defs>
+</svg>
+<figcaption>Figure 2. Three touch behaviours on one list: dragging, flicking with inertia, and touching to stop.</figcaption>
+</figure>
+<p>Later, the fast-scroll index (the A–Z strip in a contacts list) put a little of the map back: it shows what is where, not just how far you are. It is the one widely used scrollbar that carries content information, and it is the ancestor of every "enhanced scrollbar" idea in the research literature.</p>
+
+<h2>What researchers tried</h2>
+<p>HCI research has repeatedly proposed scrollbars that show more than position. Hill and colleagues' <em>read wear</em> (1992) marked the parts of a document the user had read or edited most, directly on the bar. Byrd's 1999 scrollbar showed where search hits fell. Cockburn's space-filling thumbnails (2006) replaced the bar with a miniature of the whole document during fast movement. Alexander and colleagues' Footprints scrollbar (2009) added marks for places the user had lingered, and found that people returned to them faster.</p>
+<p>Igarashi and Hinckley's speed-dependent automatic zooming (2000) took a different approach: instead of adding to the bar, it changed the content, zooming out as you scroll faster so that the page stays legible as a whole. Ishak and Feiner's content-aware scrolling (2006) let the scroll path follow the content — columns in a PDF, for instance — instead of the page.</p>
+<pre><code class="language-js">// The idea behind speed-dependent zooming, in one line:
+scale = clamp(1 / (1 + k * velocity), minScale, 1);</code></pre>
+<p>Almost none of this shipped. The reasons are practical — the bar is small, marks need to be distinguishable, and any mark that needs explaining is a mark nobody uses. But the finding underneath is stable across thirty years: users navigate faster when the scrollbar tells them <em>what</em> is at a position, not only <em>where</em> they are.</p>
+
+<h2>What people actually do</h2>
+<p>Observation studies of everyday scrolling show a consistent split. When the target is nearby and its location is known, people scroll directly, slowing as they approach. When it is far or uncertain, they stop scrolling and do something else: search, open a second tab, use an outline, or — increasingly — ask an assistant to produce the information again rather than find it.</p>
+<p>The failures are equally consistent: overshooting the target, losing the previous reading position after looking elsewhere, and being unable to tell scrollbar markers apart when several look the same. These are not problems of speed; they are problems of information. The scrollbar knows how far you are from the top, and nothing else.</p>
+<h3>The regenerate reflex</h3>
+<p>The newest behaviour is worth singling out. In a long chat with an AI assistant, users who need something from many turns ago often ask for it again instead of scrolling back, even when the earlier answer was better. Regeneration is cheap and the scroll is expensive. Any redesign of scrolling for these interfaces has to compete with the regenerate button, which means it has to be faster than typing a question.</p>
+
+<h2>Where it could go</h2>
+<p>The scrollbar's history is a history of removing things: the arrows, the trough, the bar itself. What is left is a thin indicator and a set of gestures. The next step is probably not to add the bar back but to make the indicator carry meaning — distinguishing labels for what is where, a way to return to where you were, and the ability to hold two places at once without a second window.</p>
+<p>Those three capabilities map onto the three oldest complaints. A labelled map answers "where is it?"; a remembered position answers "where was I?"; a pinned passage answers "how does this compare to that?". Fifty years in, the widget has room to learn.</p>
+</article>
+<footer>Fixture text written for the AI Widgets (05-688) scrolling prototypes. Dates and systems are accurate to the best of the author's knowledge; the reconstructions are schematic.</footer>
+<script src="dev-loader.js"></script>
+</body></html>
