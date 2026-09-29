@@ -21,7 +21,7 @@
       presets.forEach(([k, t]) => el.append(U.el('label', { class: 'sw-menu-row' }, [
         U.el('input', { type: 'radio', name: 'sw-preset', ...(s.preset === k ? { checked: '' } : {}), onchange: () => { SW.applyPreset(k); this.render(); } }), ' ', t])));
       el.append(U.el('div', { class: 'sw-menu-sub', text: 'features' }));
-      [['markers', 'Labeled markers on the rail'], ['find', 'Point-to-find (⌘⇧F / select text)'], ['ticker', 'Speed ticker when flicking'], ['waypoints', 'Waypoints + ⌘[ back'], ['pins', 'Pin & compare'], ['refs', 'Reference links in answers']]
+      [['markers', 'Labeled markers on the rail'], ['regions', 'Hover preview: what happens in ~20 pages (AI)'], ['find', 'Point-to-find (⌘⇧F / select text)'], ['ticker', 'Speed ticker when flicking'], ['waypoints', 'Waypoints + ⌘[ back'], ['pins', 'Pin & compare'], ['refs', 'Reference links in answers']]
         .forEach(([k, t]) => el.append(U.el('label', { class: 'sw-menu-row' }, [
           U.el('input', { type: 'checkbox', ...(s[k] ? { checked: '' } : {}), onchange: (e) => { SW.setSetting(k, e.target.checked); this.render(); } }), ' ', t])));
       el.append(U.el('div', { class: 'sw-menu-sub', text: `AI: ${SW.ai.hasKey ? 'Claude key saved — live labels / find by meaning / implicit refs' : 'no key — heuristics + pre-computed labels' + (SW.ai.direct ? '' : ' (set one in extension options)')}` }));
@@ -74,14 +74,22 @@
     };
     refresh();
     adapter.onChange(refresh);
-    scroller.on(U.debounce(() => SW.labeler.around(scroller.top + scroller.height / 2, scroller.height * 3), 400));
+    scroller.on(U.debounce(() => {
+      SW.labeler.around(scroller.top + scroller.height / 2, scroller.height * 3);
+      // warm the preview for where the reader has settled, so hovering nearby is instant
+      SW.region.prefetch(SW.region.chunkAt(scroller.top + scroller.height / 2));
+    }, 900));
     // layout can shift after images load / fonts swap
     window.addEventListener('load', () => SW.rail.render(SW.labeler.chunks));
     setTimeout(() => SW.rail.render(SW.labeler.chunks), 1500);
     // if the scroll container itself moves (sidebars, resizes), re-place overlays
     new ResizeObserver(() => { SW.rail.place(); SW.rail.render(SW.labeler.chunks); }).observe(scroller.isWindow ? document.documentElement : scroller.el);
     SW.bus.on('settings', () => { SW.refs.process(SW.labeler.chunks); });
-    SW.bus.on('ai-status', () => { if (SW.ai.hasKey) SW.labeler.around(scroller.top + scroller.height / 2, scroller.height * 3); });
+    SW.bus.on('ai-status', () => {
+      if (!SW.ai.hasKey) return;
+      SW.labeler.around(scroller.top + scroller.height / 2, scroller.height * 3);
+      SW.region.prefetch(SW.region.chunkAt(scroller.top + scroller.height / 2));
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

@@ -21,6 +21,7 @@
         "src/00-util.js",
         "src/01-adapters.js",
         "src/02-labeler.js",
+        "src/02b-region.js",
         "src/03-waypoints.js",
         "src/04-rail.js",
         "src/05-find.js",

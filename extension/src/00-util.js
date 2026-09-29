@@ -56,10 +56,10 @@
 
   // ---------- settings / presets ----------
   const PRESETS = {
-    P1: { markers: true, find: true, ticker: true, waypoints: true, pins: false, refs: false },
-    P2: { markers: false, find: false, ticker: false, waypoints: true, pins: false, refs: true },
-    P3: { markers: false, find: false, ticker: false, waypoints: true, pins: true, refs: false },
-    ALL: { markers: true, find: true, ticker: true, waypoints: true, pins: true, refs: true }
+    P1: { markers: true, find: true, ticker: true, waypoints: true, pins: false, refs: false, regions: true },
+    P2: { markers: false, find: false, ticker: false, waypoints: true, pins: false, refs: true, regions: false },
+    P3: { markers: false, find: false, ticker: false, waypoints: true, pins: true, refs: false, regions: false },
+    ALL: { markers: true, find: true, ticker: true, waypoints: true, pins: true, refs: true, regions: true }
   };
   SW.PRESETS = PRESETS;
   SW.settings = Object.assign({ preset: 'ALL', tickerSpeed: 1.5 }, PRESETS.ALL, U.store.get('settings', {}));

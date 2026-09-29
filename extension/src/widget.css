@@ -42,6 +42,13 @@
 .sw-lens-excerpt { color: var(--sw-dim); padding: 6px 6px 2px; white-space: normal; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 3px; font-size: 11.5px; }
 .sw-lens-src { color: #6f6f7a; padding: 2px 6px 4px; font-size: 10px; }
 
+.sw-lens-region { border-top: 1px solid rgba(255,255,255,0.12); margin-top: 4px; padding: 7px 7px 4px; white-space: normal; max-width: 340px; }
+.sw-lens-here { font-size: 12.5px; line-height: 1.45; }
+.sw-lens-flow { color: var(--sw-dim); font-size: 11px; line-height: 1.4; margin: 2px 0; }
+.sw-lens-beats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.sw-beat { background: rgba(124,92,255,0.22); border: 1px solid rgba(124,92,255,0.4); border-radius: 999px; padding: 1px 7px; font-size: 10.5px; }
+.sw-lens-wait { color: var(--sw-dim); font-style: italic; font-size: 11.5px; }
+
 /* ---- waypoint pill ---- */
 .sw-pill { position: fixed; display: flex; gap: 6px; }
 .sw-pill-btn { display: flex; align-items: center; gap: 4px; background: var(--sw-bg); border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; padding: 7px 12px 7px 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); max-width: 380px; }

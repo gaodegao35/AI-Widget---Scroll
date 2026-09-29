@@ -5,7 +5,7 @@ shared plumbing. Each prototype answers one problem from the research phase:
 
 | Prototype | Problem from the observations | Features |
 |---|---|---|
-| **P1 · Where is it?** | target location is uncertain → scanning, overshooting; scrollbar markers all look the same | 4 labeled markers · 3 point-to-find · 5 speed ticker · 7 waypoints |
+| **P1 · Where is it?** | target location is uncertain → scanning, overshooting; scrollbar markers all look the same | labeled markers · **region preview on hover** · point-to-find · speed ticker · waypoints |
 | **P2 · Take me there & bring me back** | the AI says "see the version above" but you still have to find it; then you lose your place | 1 reference-to-jump · 7 waypoints |
 | **P3 · Two places at once** | comparing two parts → people open a second tab | 10 pin & compare · 7 waypoints |
 
@@ -70,6 +70,18 @@ contract as chatgpt.com and labels pre-computed in `data-label`. The extension c
 - `fixtures/article.html` — long article for P1 + P3
 - `fixtures/document.html` — generated 24-chapter book: stress test for the lazy-labeling rule
 
+## Region preview (the AI half of the marker)
+
+A label tells you *which chapter* a position is — that's structure, and headings give it for free. Hovering asks
+Claude to read the stretch of document around that position (≈10 pages either side, ~9k tokens) and answer the
+question a label can't: *what actually happens here?* It returns what leads up to the position, what is at it, what
+follows, and 2–4 concrete beats ("IntelliMouse wheel, 1996", "read wear (1992)"), so you can decide whether to scroll
+there without going there.
+
+Summaries are cached per region and prefetched: the region you have settled in is warmed while you read, and the
+neighbours of a hovered region are warmed while you look at it (max 2 requests in flight). A cold hover takes ~6 s
+and shows *"reading around this point…"*; a warm one is instant. Turn it off with **Hover preview** in the ⚙ menu.
+
 ## The "long document" rule
 
 Nothing is processed for the whole document up front. Headings give the rail its coarse markers instantly; on dense
@@ -97,6 +109,7 @@ extension/
     00-util.js       namespace, settings & presets, Scroller (window or inner element), event bus, AI bridge
     01-adapters.js   chatgpt + generic article adapters → chunks {el, type, label, text, turn}
     02-labeler.js    lazy labels: pre-computed → Claude → heuristic
+    02b-region.js    region preview: ±10 pages of context → Claude → cached summary, with prefetch
     03-waypoints.js  feature 7: jump detection, ⌘[ ⌘], pill, highlight
     04-rail.js       feature 4: rail, markers, lens, thumb, prompt arrows, density rule
     05-find.js       feature 3: local match + paraphrase table, optional Claude re-rank, selection popover

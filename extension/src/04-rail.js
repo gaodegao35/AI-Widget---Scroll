@@ -128,7 +128,23 @@
         ]);
         this.lens.append(row);
       });
-      if (focus && focus.type !== 'heading') {
+      // The AI half of the marker: what actually happens in the ~20 pages around this position.
+      // The labels above are instant; this fills in underneath when it arrives.
+      const region = SW.settings.regions !== false && focus ? SW.region.request(focus, () => { if (this._lensChunk === focus) this.renderLens(list, clientY, focus); }) : null;
+      if (region) SW.region.prefetchAround(focus); // warm the neighbours while they read this one
+      if (region && !region.failed) {
+        const box = U.el('div', { class: 'sw-lens-region' });
+        if (region.before) box.append(U.el('div', { class: 'sw-lens-flow', text: '↑ ' + region.before }));
+        if (region.here) box.append(U.el('div', { class: 'sw-lens-here', text: region.here }));
+        if (region.after) box.append(U.el('div', { class: 'sw-lens-flow', text: '↓ ' + region.after }));
+        if (Array.isArray(region.beats) && region.beats.length) {
+          box.append(U.el('div', { class: 'sw-lens-beats' }, region.beats.slice(0, 4).map(b => U.el('span', { class: 'sw-beat', text: b }))));
+        }
+        box.append(U.el('div', { class: 'sw-lens-src', text: '≈20 pages around here · Claude' }));
+        this.lens.append(box);
+      } else if (focus && SW.ai.hasKey && SW.settings.regions !== false && SW.region.isPending(focus)) {
+        this.lens.append(U.el('div', { class: 'sw-lens-region sw-lens-wait', text: 'reading around this point…' }));
+      } else if (focus && focus.type !== 'heading') {
         const excerpt = focus.type === 'image' ? (focus.alt || '') : (focus.text || '');
         if (excerpt) this.lens.append(U.el('div', { class: 'sw-lens-excerpt', text: excerpt.slice(0, 160) + (excerpt.length > 160 ? '…' : '') }));
         if (focus.labelSource) this.lens.append(U.el('div', { class: 'sw-lens-src', text: focus.el.dataset.label ? 'label: pre-computed' : `label: ${focus.labelSource}` }));
@@ -137,7 +153,8 @@
       this.lens.style.right = (window.innerWidth - r.left + 6) + 'px';
       this.lens.hidden = false;
       const h = this.lens.offsetHeight;
-      this.lens.style.top = U.clamp(clientY - h / 2, 8, window.innerHeight - h - 8) + 'px';
+      this.lens.style.top = U.clamp((this._lensY ?? clientY) - h / 2, 8, Math.max(8, window.innerHeight - h - 8)) + 'px';
+      this._lensY = clientY;
     },
     hideLensSoon() { clearTimeout(this._hideT); this._hideT = setTimeout(() => this.hideLens(), 250); },
     hideLens() { clearTimeout(this._hideT); this.lens.hidden = true; this._lensChunk = null; },

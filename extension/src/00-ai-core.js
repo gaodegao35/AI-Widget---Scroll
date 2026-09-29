@@ -18,6 +18,26 @@ Return ONLY a JSON array of candidate ids, best first, at most 12. Omit candidat
 Candidates:
 ${JSON.stringify(p.candidates)}`,
 
+    // What happens in the region around a point (Prototype 1) — the hover "preview of 20 pages".
+    region: (p) => `A reader is hovering over one position in a long ${p.kind}. Below is the content around that position, in order.
+Write a preview of what is in this part, for someone deciding whether to scroll here.
+
+Return ONLY JSON: {"here": "...", "before": "...", "after": "...", "beats": ["...", "..."]}
+- "here": one sentence on what is happening AT the hovered position.
+- "before": one short clause on what leads up to it (omit if there is nothing before).
+- "after": one short clause on what follows (omit if there is nothing after).
+- "beats": 2-4 very short noun phrases naming the distinct things in this stretch, in order. No full sentences.
+Name specifics — people, places, terms, numbers. Never write "this section discusses".
+
+BEFORE the position:
+${p.before || '(nothing — start of document)'}
+
+AT the position:
+${p.here}
+
+AFTER the position:
+${p.after || '(nothing — end of document)'}`,
+
     // Implicit references inside an AI answer (Prototype 2, feature 1).
     refs: (p) => `Below is an assistant message from a long chat, plus short excerpts of earlier messages.
 Find phrases in the assistant message that refer back to a specific earlier message the reader would have to SCROLL BACK to find (e.g. "the version above", "the diagram I made", "as in my earlier reply").
@@ -57,8 +77,8 @@ ${JSON.stringify(p.earlier)}`
     try {
       const cleaned = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').replace(/[\u201c\u201d]/g, '"').replace(/[\u2018\u2019]/g, "'").trim();
       let result = JSON.parse(cleaned);
-      // every task expects an array; tolerate {"ranking": [...]} / {"items": [...]} wrappers
-      if (result && !Array.isArray(result) && typeof result === 'object') {
+      // array-returning tasks: tolerate {"ranking": [...]} / {"items": [...]} wrappers
+      if (task !== 'region' && result && !Array.isArray(result) && typeof result === 'object') {
         const arr = Object.values(result).find(v => Array.isArray(v));
         if (arr) result = arr;
       }

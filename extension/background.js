@@ -4,7 +4,7 @@
 //    on the options page. Every feature has a heuristic fallback, so the key is optional.
 
 const FILES = [
-  'src/00-ai-core.js', 'src/00-util.js', 'src/01-adapters.js', 'src/02-labeler.js', 'src/03-waypoints.js',
+  'src/00-ai-core.js', 'src/00-util.js', 'src/01-adapters.js', 'src/02-labeler.js', 'src/02b-region.js', 'src/03-waypoints.js',
   'src/04-rail.js', 'src/05-find.js', 'src/06-ticker.js', 'src/07-pins.js',
   'src/08-refs.js', 'src/09-main.js'
 ];
