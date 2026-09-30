@@ -89,4 +89,5 @@ ${JSON.stringify(p.earlier)}`
   }
 
   root.SW_AI = { PROMPTS, callClaude };
-})(typeof self !== 'undefined' ? self : window);
+  if (typeof module !== 'undefined' && module.exports) module.exports = { PROMPTS, callClaude };
+})(typeof globalThis !== 'undefined' ? globalThis : self);

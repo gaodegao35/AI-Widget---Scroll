@@ -24,8 +24,9 @@
       [['markers', 'Labeled markers on the rail'], ['regions', 'Hover preview: what happens in ~20 pages (AI)'], ['find', 'Point-to-find (⌘⇧F / select text)'], ['ticker', 'Speed ticker when flicking'], ['waypoints', 'Waypoints + ⌘[ back'], ['pins', 'Pin & compare'], ['refs', 'Reference links in answers']]
         .forEach(([k, t]) => el.append(U.el('label', { class: 'sw-menu-row' }, [
           U.el('input', { type: 'checkbox', ...(s[k] ? { checked: '' } : {}), onchange: (e) => { SW.setSetting(k, e.target.checked); this.render(); } }), ' ', t])));
-      el.append(U.el('div', { class: 'sw-menu-sub', text: `AI: ${SW.ai.hasKey ? 'Claude key saved — live labels / find by meaning / implicit refs' : 'no key — heuristics + pre-computed labels' + (SW.ai.direct ? '' : ' (set one in extension options)')}` }));
-      if (SW.ai.direct) {
+      const how = { extension: 'via the extension (key in extension storage)', proxy: 'via /api/claude (key on the server)', direct: 'direct from this page (key in localStorage)' }[SW.ai.mode];
+      el.append(U.el('div', { class: 'sw-menu-sub', text: SW.ai.hasKey ? `AI: on — ${how}` : 'AI: off — heuristics + pre-computed labels' }));
+      if (SW.ai.direct && SW.ai.mode !== 'proxy') {
         const inp = U.el('input', { class: 'sw-find-input', type: 'password', placeholder: 'Claude API key (sk-ant-…) — stays in this page’s localStorage', value: SW.ai.directKey() });
         const status = U.el('span', { class: 'sw-menu-sub', text: SW.ai.directKey() ? `saved (${SW.ai.directKey().length} chars) · ${location.host}` : 'not set' });
         const save = () => { SW.ai.setDirectKey(inp.value.trim()); status.textContent = inp.value.trim() ? `saved (${inp.value.trim().length} chars) · ${location.host}` : 'not set'; };

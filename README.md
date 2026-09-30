@@ -35,6 +35,14 @@ find ranks every passage by meaning in one call ("the gadget that spins between 
 paragraph), labels near the viewport are rewritten by Claude ("Regenerate beats scrolling back"), and implicit
 references ("the version above") are detected.
 
+**Option C — deploy to Vercel** (public demo link, key stays on the server).
+Import the repo in Vercel, add an environment variable **`ANTHROPIC_API_KEY`** (Project Settings →
+Environment Variables → all environments), and deploy. No build step — it is static files plus one
+serverless function, `api/claude.js`, which the page calls instead of Anthropic directly, so the key is
+never in the browser. `/` redirects to the fixture index, and the widget loads automatically on a deployed
+host (no `?dev` needed). Anyone with the link spends your credits, so keep the URL unlisted or add a
+password in Vercel's project protection.
+
 ## Using it
 
 - **Rail** (right edge): colored ticks = prompts / code / images / tables / headings. Hover the rail → a lens lists
@@ -120,7 +128,9 @@ extension/
     08-refs.js       feature 1: [turn N] / [ref: "…"] chips, implicit refs via Claude
     09-main.js       boot, refresh on DOM change, ⚙ menu
     widget.css
-fixtures/            test pages (+ dev-loader.js for ?dev mode)
+fixtures/            test pages (+ dev-loader.js: ?dev locally, automatic when deployed)
+api/claude.js        Vercel serverless proxy — reads ANTHROPIC_API_KEY, shares the prompts in 00-ai-core.js
+vercel.json          redirect / → fixtures/index.html
 ```
 
 ## Status

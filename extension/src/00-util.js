@@ -112,30 +112,58 @@
   };
 
   // ---------- AI bridge ----------
-  // In the extension, calls go through background.js (key in chrome.storage). In ?dev mode (no extension),
-  // the page calls the API directly with a key kept in localStorage — the API permits browser calls.
+  // Three ways to reach Claude, in order of preference:
+  //   1. extension  → background.js holds the key in chrome.storage
+  //   2. proxy      → POST /api/claude (Vercel function; the key lives on the server, never here)
+  //   3. direct     → the key is in this page's localStorage (local dev, ?dev pages)
   const inExtension = () => { try { return !!(chrome.runtime && chrome.runtime.id); } catch { return false; } };
   SW.ai = {
     hasKey: null,
-    direct: !inExtension(),
+    mode: inExtension() ? 'extension' : null, // null = not yet probed
     directKey() { return U.store.get('claudeKey', ''); },
-    setDirectKey(k) { U.store.set('claudeKey', k); this.hasKey = null; this.check(); },
+    setDirectKey(k) { U.store.set('claudeKey', k); this.hasKey = null; if (this.mode === 'direct' || !this.mode) this.mode = k ? 'direct' : null; this.check(); },
+    get direct() { return this.mode !== 'extension'; }, // the ⚙ key field shows outside the extension
+
+    async probeProxy() {
+      if (this._proxy !== undefined) return this._proxy;
+      if (!/^https?:$/.test(location.protocol)) return (this._proxy = false);
+      try {
+        const r = await fetch('/api/claude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ task: 'ping' }) });
+        // 400 unknown-task means the function is deployed and configured; 501 means no key on the server
+        this._proxy = r.status === 400;
+      } catch { this._proxy = false; }
+      return this._proxy;
+    },
+
     async check() {
       if (this.hasKey != null) return this.hasKey;
-      if (this.direct) this.hasKey = !!this.directKey();
-      else {
+      if (this.mode === 'extension') {
         try { const r = await chrome.runtime.sendMessage({ type: 'sw-haskey' }); this.hasKey = !!(r && r.ok); }
         catch { this.hasKey = false; }
+      } else if (await this.probeProxy()) {
+        this.mode = 'proxy';
+        this.hasKey = true;
+      } else {
+        this.mode = this.directKey() ? 'direct' : null;
+        this.hasKey = !!this.directKey();
       }
       SW.bus.emit('ai-status', this.hasKey);
       return this.hasKey;
     },
+
     async call(task, payload) {
       if (!(await this.check())) return null;
       try {
-        const r = this.direct ? await self.SW_AI.callClaude(this.directKey(), task, payload)
-                              : await chrome.runtime.sendMessage({ type: 'sw-ai', task, payload });
-        if (!r || !r.ok) { SW.log('AI call failed', task, r); this.lastError = r && (r.reason + (r.detail ? ': ' + String(r.detail).slice(0, 200) : '')); SW.bus.emit('ai-status', this.hasKey); return null; }
+        let r;
+        if (this.mode === 'extension') r = await chrome.runtime.sendMessage({ type: 'sw-ai', task, payload });
+        else if (this.mode === 'proxy') r = await (await fetch('/api/claude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ task, payload }) })).json();
+        else r = await self.SW_AI.callClaude(this.directKey(), task, payload);
+        if (!r || !r.ok) {
+          SW.log('AI call failed', task, r);
+          this.lastError = r && (r.reason + (r.detail ? ': ' + String(r.detail).slice(0, 200) : ''));
+          SW.bus.emit('ai-status', this.hasKey);
+          return null;
+        }
         this.lastError = null;
         return r.result;
       } catch (e) { SW.log('AI bridge error', e); this.lastError = String(e); return null; }
