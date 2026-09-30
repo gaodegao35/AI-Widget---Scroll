@@ -12,6 +12,7 @@
   border-left: 1px solid rgba(255,255,255,0.08); }
 .sw-rail-tools { display: flex; flex-direction: column; align-items: center; padding: 4px 0; gap: 2px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .sw-ui .sw-tool { width: 18px; height: 18px; border-radius: 4px; font-size: 11px; line-height: 18px; text-align: center; color: var(--sw-dim); }
+.sw-ui .sw-aidot { color: #ffb547; }
 .sw-ui .sw-tool:hover { background: rgba(255,255,255,0.12); color: var(--sw-fg); }
 .sw-rail-track { position: relative; flex: 1; cursor: pointer; }
 .sw-rail-markers { position: absolute; inset: 0; }
@@ -28,7 +29,6 @@
 .sw-t-heading.sw-h3, .sw-t-heading.sw-h4 { width: 8px; height: 2px; }
 .sw-t-para { background: var(--sw-hit); width: 6px; }
 .sw-marker.sw-hit { background: var(--sw-hit); width: 16px; height: 4px; box-shadow: 0 0 0 2px rgba(255,181,71,0.35); }
-.sw-nomarkers .sw-marker:not(.sw-hit) { display: none; }
 
 /* lens (hover popover next to the rail) */
 .sw-lens { position: fixed; min-width: 220px; max-width: 340px; background: var(--sw-bg); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 4px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
@@ -111,10 +111,3 @@
 .sw-ref:hover { background: rgba(124,92,255,0.32); }
 .sw-ref-arrow { color: #7c5cff; font-weight: 700; }
 .sw-ref-implicit { border-style: dashed; }
-
-/* ---- settings menu ---- */
-.sw-menu { position: fixed; width: 360px; background: var(--sw-bg); border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; padding: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
-.sw-menu-title { font-weight: 700; padding: 4px 6px 8px; }
-.sw-menu-sub { color: var(--sw-dim); font-size: 11px; padding: 8px 6px 2px; }
-.sw-menu-row { display: block; padding: 4px 6px; border-radius: 5px; cursor: pointer; }
-.sw-menu-row:hover { background: rgba(255,255,255,0.08); }

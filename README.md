@@ -13,35 +13,27 @@ Feature 7 (waypoints + ⌘[ back) is shared: every AI-driven jump drops a waypoi
 
 ## Run it
 
-**Option A — no install, for a quick look.** Serve the repo and open a fixture with `?dev`:
+**Deployed (the normal way).** The site is static pages plus one serverless function. On Vercel, set
+**`ANTHROPIC_API_KEY`** in Project Settings → Environment Variables and deploy — no build step, no framework
+preset. Routes:
 
-```sh
-python3 -m http.server 8000        # from the repo root
-open http://localhost:8000/fixtures/index.html
-```
-`chat.html?dev`, `article.html?dev`, `document.html?dev` load the widget straight from `extension/src/`.
-To use Claude in this mode, open the ⚙ menu on the rail and paste an API key into the field at the bottom
-(kept in that page's localStorage; the API accepts direct browser calls).
+| | |
+|---|---|
+| `/` | home — the findings, the two demos, what to press |
+| `/gpt` | 36-turn ChatGPT conversation |
+| `/document` | 24-chapter book (~400 paragraphs) |
+| `/article` | shorter article, used for testing |
+| `/api/claude` | the serverless proxy; the key never reaches the browser |
 
-**Option B — the extension, for real pages and for testing.**
-1. `chrome://extensions` → *Developer mode* → *Load unpacked* → pick `extension/`.
-2. It activates automatically on `chatgpt.com` and on `localhost` (the fixtures, opened *without* `?dev`).
-   On any other long page, click the toolbar icon to inject it.
-3. Optional: extension *Options* → paste a Claude API key → live labels, paraphrase re-ranking, implicit references.
+Anyone with the link spends your credits, so keep it unlisted or turn on Deployment Protection.
 
-**What the key changes.** Without it, find is keyword matching plus a paraphrase table, labels are heuristic
-(first words / first code line), and only explicit `[turn N]` / `[ref: "…"]` references become links. With it,
-find ranks every passage by meaning in one call ("the gadget that spins between the mouse buttons" → the IntelliMouse
-paragraph), labels near the viewport are rewritten by Claude ("Regenerate beats scrolling back"), and implicit
-references ("the version above") are detected.
+**Locally.** `vercel dev` gives you the same thing including `/api/claude`. A plain static server
+(`python3 -m http.server`) also works, but without the function the AI half is unavailable: an amber dot
+appears on the rail and labels and find fall back to heuristics.
 
-**Option C — deploy to Vercel** (public demo link, key stays on the server).
-Import the repo in Vercel, add an environment variable **`ANTHROPIC_API_KEY`** (Project Settings →
-Environment Variables → all environments), and deploy. No build step — it is static files plus one
-serverless function, `api/claude.js`, which the page calls instead of Anthropic directly, so the key is
-never in the browser. `/` redirects to the fixture index, and the widget loads automatically on a deployed
-host (no `?dev` needed). Anyone with the link spends your credits, so keep the URL unlisted or add a
-password in Vercel's project protection.
+**As a Chrome extension**, for real chatgpt.com: `chrome://extensions` → Developer mode → Load unpacked →
+`extension/`. Put a key in the extension's Options page. Click the toolbar icon to inject it into any other
+long page.
 
 ## Using it
 
@@ -54,9 +46,7 @@ password in Vercel's project protection.
 - **Hover a code block / image / table → 📌 Pin.** Or select text → **📌 Pin**. Pinned things stay in a pane at the
   bottom; pin a second for side-by-side. The pane suggests a counterpart ("⇄ compare with: parser v3").
 - **Reference chips** in AI answers (`↑ turn 4 · parser v2`) jump to the original and highlight it.
-- **⚙** on the rail switches between P1 / P2 / P3 / Everything so each prototype can be tested alone.
-  The choice is remembered **per page**, so two fixtures on the same localhost can hold different setups;
-  the API key is remembered per host, so it only needs pasting once.
+There is no settings panel and nothing to switch on: every page runs the whole widget.
 
 ## Real ChatGPT
 
@@ -111,26 +101,31 @@ actually look at it.
 ## Layout
 
 ```
+index.html           home page
+gpt.html             ChatGPT conversation demo      → /gpt
+document.html        24-chapter book demo           → /document
+article.html         article demo                   → /article
+widget-loader.js     loads the widget into a demo page
+vercel.json          clean URLs
+api/claude.js        serverless Claude proxy (ANTHROPIC_API_KEY), shares the prompts in 00-ai-core.js
 extension/
-  manifest.json      MV3; content scripts on chatgpt.com + localhost, toolbar click injects elsewhere
-  background.js      toolbar injection + optional Claude calls (labels / rerank / refs)
-  options.html/js    API key
+  manifest.json      MV3; content script on chatgpt.com, toolbar click injects elsewhere
+  background.js      injection + Claude calls for the extension build
+  options.html/js    API key for the extension build
   src/
-    00-util.js       namespace, settings & presets, Scroller (window or inner element), event bus, AI bridge
-    01-adapters.js   chatgpt + generic article adapters → chunks {el, type, label, text, turn}
+    00-ai-core.js    the four prompts + the Claude call (browser and Node)
+    00-util.js       namespace, Scroller, event bus, AI bridge (extension or /api/claude)
+    01-adapters.js   chatgpt + generic article adapters → chunks
     02-labeler.js    lazy labels: pre-computed → Claude → heuristic
-    02b-region.js    region preview: ±10 pages of context → Claude → cached summary, with prefetch
-    03-waypoints.js  feature 7: jump detection, ⌘[ ⌘], pill, highlight
-    04-rail.js       feature 4: rail, markers, lens, thumb, prompt arrows, density rule
-    05-find.js       feature 3: local match + paraphrase table, optional Claude re-rank, selection popover
-    06-ticker.js     feature 5: speed-dependent overlay
-    07-pins.js       feature 10: pin pane, side-by-side, counterpart suggestion
-    08-refs.js       feature 1: [turn N] / [ref: "…"] chips, implicit refs via Claude
-    09-main.js       boot, refresh on DOM change, ⚙ menu
+    02b-region.js    region preview: ±10 pages → Claude → cached summary, with prefetch
+    03-waypoints.js  jump detection, ⌘[ ⌘], pill, highlight
+    04-rail.js       rail, markers, lens, thumb, prompt arrows, density rule
+    05-find.js       local match + paraphrase table, Claude ranking, selection popover
+    06-ticker.js     speed-dependent overlay
+    07-pins.js       pin pane, side-by-side, counterpart suggestion
+    08-refs.js       [turn N] / [ref: "…"] chips, implicit refs via Claude
+    09-main.js       boot, refresh on DOM change
     widget.css
-fixtures/            test pages (+ dev-loader.js: ?dev locally, automatic when deployed)
-api/claude.js        Vercel serverless proxy — reads ANTHROPIC_API_KEY, shares the prompts in 00-ai-core.js
-vercel.json          redirect / → fixtures/index.html
 ```
 
 ## Status

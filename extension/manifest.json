@@ -12,9 +12,7 @@
     {
       "matches": [
         "https://chatgpt.com/*",
-        "https://chat.openai.com/*",
-        "http://localhost/*",
-        "http://127.0.0.1/*"
+        "https://chat.openai.com/*"
       ],
       "js": [
         "src/00-ai-core.js",

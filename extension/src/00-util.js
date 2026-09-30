@@ -54,27 +54,10 @@
     emit(ev, ...a) { (handlers[ev] || []).forEach(fn => { try { fn(...a); } catch (e) { SW.log('handler error', ev, e); } }); }
   };
 
-  // ---------- settings / presets ----------
-  const PRESETS = {
-    P1: { markers: true, find: true, ticker: true, waypoints: true, pins: false, refs: false, regions: true },
-    P2: { markers: false, find: false, ticker: false, waypoints: true, pins: false, refs: true, regions: false },
-    P3: { markers: false, find: false, ticker: false, waypoints: true, pins: true, refs: false, regions: false },
-    ALL: { markers: true, find: true, ticker: true, waypoints: true, pins: true, refs: true, regions: true }
-  };
-  SW.PRESETS = PRESETS;
-  // Settings are scoped to the PAGE, not the origin: two fixtures served from the same localhost
-  // must be able to hold different presets (chat demo vs. document demo). The API key stays
-  // origin-wide so it only has to be pasted once per host.
-  const SKEY = 'settings@' + location.pathname;
-  const saved = U.store.get(SKEY, null) || U.store.get('settings', {}); // migrate old origin-wide value
-  SW.settings = Object.assign({ preset: 'ALL', tickerSpeed: 1.5 }, PRESETS.ALL, saved);
-  const persist = () => U.store.set(SKEY, SW.settings);
-  SW.applyPreset = (name) => {
-    Object.assign(SW.settings, PRESETS[name], { preset: name });
-    persist();
-    SW.bus.emit('settings');
-  };
-  SW.setSetting = (k, v) => { SW.settings[k] = v; SW.settings.preset = 'CUSTOM'; persist(); SW.bus.emit('settings'); };
+  // ---------- features ----------
+  // Every feature is on, everywhere. There is no preset picker any more: the demo pages and the
+  // deployed site all run the whole widget, so nothing has to be switched on before showing it.
+  SW.settings = { markers: true, find: true, ticker: true, waypoints: true, pins: true, refs: true, regions: true, tickerSpeed: 1.5 };
 
   // ---------- scroller abstraction (window or an inner scrolling element, e.g. the ChatGPT thread) ----------
   SW.Scroller = class {
@@ -112,40 +95,27 @@
   };
 
   // ---------- AI bridge ----------
-  // Three ways to reach Claude, in order of preference:
-  //   1. extension  → background.js holds the key in chrome.storage
-  //   2. proxy      → POST /api/claude (Vercel function; the key lives on the server, never here)
-  //   3. direct     → the key is in this page's localStorage (local dev, ?dev pages)
+  // Two ways to reach Claude, both keyless from the page's point of view:
+  //   extension → background.js (key in extension storage)
+  //   web       → POST /api/claude (key in the server's environment)
   const inExtension = () => { try { return !!(chrome.runtime && chrome.runtime.id); } catch { return false; } };
   SW.ai = {
     hasKey: null,
-    mode: inExtension() ? 'extension' : null, // null = not yet probed
-    directKey() { return U.store.get('claudeKey', ''); },
-    setDirectKey(k) { U.store.set('claudeKey', k); this.hasKey = null; if (this.mode === 'direct' || !this.mode) this.mode = k ? 'direct' : null; this.check(); },
-    get direct() { return this.mode !== 'extension'; }, // the ⚙ key field shows outside the extension
-
-    async probeProxy() {
-      if (this._proxy !== undefined) return this._proxy;
-      if (!/^https?:$/.test(location.protocol)) return (this._proxy = false);
-      try {
-        const r = await fetch('/api/claude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ task: 'ping' }) });
-        // 400 unknown-task means the function is deployed and configured; 501 means no key on the server
-        this._proxy = r.status === 400;
-      } catch { this._proxy = false; }
-      return this._proxy;
-    },
+    mode: inExtension() ? 'extension' : 'proxy',
 
     async check() {
       if (this.hasKey != null) return this.hasKey;
       if (this.mode === 'extension') {
         try { const r = await chrome.runtime.sendMessage({ type: 'sw-haskey' }); this.hasKey = !!(r && r.ok); }
         catch { this.hasKey = false; }
-      } else if (await this.probeProxy()) {
-        this.mode = 'proxy';
-        this.hasKey = true;
       } else {
-        this.mode = this.directKey() ? 'direct' : null;
-        this.hasKey = !!this.directKey();
+        try {
+          // 400 unknown-task = the function is deployed and has a key; 501 = deployed without one
+          const r = await fetch('/api/claude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ task: 'ping' }) });
+          this.hasKey = r.status === 400;
+          if (r.status === 501) this.lastError = 'ANTHROPIC_API_KEY is not set on the server';
+          else if (!this.hasKey) this.lastError = 'no /api/claude on this host (run `vercel dev` locally)';
+        } catch { this.hasKey = false; this.lastError = 'could not reach /api/claude'; }
       }
       SW.bus.emit('ai-status', this.hasKey);
       return this.hasKey;
@@ -154,14 +124,12 @@
     async call(task, payload) {
       if (!(await this.check())) return null;
       try {
-        let r;
-        if (this.mode === 'extension') r = await chrome.runtime.sendMessage({ type: 'sw-ai', task, payload });
-        else if (this.mode === 'proxy') r = await (await fetch('/api/claude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ task, payload }) })).json();
-        else r = await self.SW_AI.callClaude(this.directKey(), task, payload);
+        const r = this.mode === 'extension'
+          ? await chrome.runtime.sendMessage({ type: 'sw-ai', task, payload })
+          : await (await fetch('/api/claude', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ task, payload }) })).json();
         if (!r || !r.ok) {
           SW.log('AI call failed', task, r);
-          this.lastError = r && (r.reason + (r.detail ? ': ' + String(r.detail).slice(0, 200) : ''));
-          SW.bus.emit('ai-status', this.hasKey);
+          this.lastError = r && r.reason;
           return null;
         }
         this.lastError = null;

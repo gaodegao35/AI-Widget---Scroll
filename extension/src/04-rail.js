@@ -17,7 +17,8 @@
           adapter.hasPrompts ? U.el('button', { class: 'sw-tool', title: 'Previous prompt', onclick: () => this.stepPrompt(-1), text: '▲' }) : null,
           adapter.hasPrompts ? U.el('button', { class: 'sw-tool', title: 'Next prompt', onclick: () => this.stepPrompt(1), text: '▼' }) : null,
           this.findBtn = U.el('button', { class: 'sw-tool', title: `Find (${key} or /)`, onclick: () => SW.find && SW.find.toggle(), text: '⌕' }),
-          U.el('button', { class: 'sw-tool', title: 'Prototype settings', onclick: (e) => SW.menu && SW.menu.toggle(e.currentTarget), text: '⚙' })
+          // lights up only when the AI half is unavailable, so a degraded demo is never silent
+          this.aiDot = U.el('button', { class: 'sw-tool sw-aidot', hidden: '', title: 'AI unavailable — labels and find are running on heuristics', text: '◍' })
         ]),
         this.track = U.el('div', { class: 'sw-rail-track' }, [
           this.markers = U.el('div', { class: 'sw-rail-markers' }),
@@ -43,15 +44,13 @@
       scroller.on(tick);
       window.addEventListener('resize', () => { this.place(); this.render(this.chunks); });
       SW.bus.on('labels', () => this.refreshLabels());
-      SW.bus.on('settings', () => this.applySettings());
+      SW.bus.on('ai-status', () => this.applySettings());
       this.place();
       this.applySettings();
     },
 
     applySettings() {
-      this.el.classList.toggle('sw-nomarkers', !SW.settings.markers);
-      if (this.findBtn) this.findBtn.hidden = !SW.settings.find; // don't offer a switched-off feature
-      if (!SW.settings.find && SW.find && SW.find.box && !SW.find.box.hidden) SW.find.close();
+      if (this.aiDot) this.aiDot.hidden = SW.ai.hasKey !== false;
     },
 
     place() {
