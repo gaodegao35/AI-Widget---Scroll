@@ -62,13 +62,19 @@
     ALL: { markers: true, find: true, ticker: true, waypoints: true, pins: true, refs: true, regions: true }
   };
   SW.PRESETS = PRESETS;
-  SW.settings = Object.assign({ preset: 'ALL', tickerSpeed: 1.5 }, PRESETS.ALL, U.store.get('settings', {}));
+  // Settings are scoped to the PAGE, not the origin: two fixtures served from the same localhost
+  // must be able to hold different presets (chat demo vs. document demo). The API key stays
+  // origin-wide so it only has to be pasted once per host.
+  const SKEY = 'settings@' + location.pathname;
+  const saved = U.store.get(SKEY, null) || U.store.get('settings', {}); // migrate old origin-wide value
+  SW.settings = Object.assign({ preset: 'ALL', tickerSpeed: 1.5 }, PRESETS.ALL, saved);
+  const persist = () => U.store.set(SKEY, SW.settings);
   SW.applyPreset = (name) => {
     Object.assign(SW.settings, PRESETS[name], { preset: name });
-    U.store.set('settings', SW.settings);
+    persist();
     SW.bus.emit('settings');
   };
-  SW.setSetting = (k, v) => { SW.settings[k] = v; SW.settings.preset = 'CUSTOM'; U.store.set('settings', SW.settings); SW.bus.emit('settings'); };
+  SW.setSetting = (k, v) => { SW.settings[k] = v; SW.settings.preset = 'CUSTOM'; persist(); SW.bus.emit('settings'); };
 
   // ---------- scroller abstraction (window or an inner scrolling element, e.g. the ChatGPT thread) ----------
   SW.Scroller = class {

@@ -69,10 +69,14 @@
         if (e.key === 'ArrowDown') { e.preventDefault(); this.step(1); }
         if (e.key === 'ArrowUp') { e.preventDefault(); this.step(-1); }
       });
+      const typing = (t) => t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
       document.addEventListener('keydown', (e) => {
         if (!SW.settings.find) return;
         const mod = U.isMac ? e.metaKey : e.ctrlKey;
         if (mod && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); this.toggle(); }
+        // "/" as a second opener: ⌘⇧F can be swallowed by another app or extension before it
+        // reaches the page, and during a demo a dead shortcut looks like a dead feature.
+        if (e.key === '/' && !mod && !e.altKey && !typing(e.target) && this.box.hidden) { e.preventDefault(); this.open(); }
         if (e.key === 'Escape' && !this.box.hidden) this.close();
       }, true);
 

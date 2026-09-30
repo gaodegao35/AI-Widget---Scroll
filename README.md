@@ -39,7 +39,7 @@ references ("the version above") are detected.
 
 - **Rail** (right edge): colored ticks = prompts / code / images / tables / headings. Hover the rail → a lens lists
   the nearest items with distinguishing labels; click to jump. ▲▼ at the top hop between *your* prompts.
-- **⌘⇧F** (or the ⌕ button) → find by meaning. Or select text on the page → **⌕ Find related**.
+- **⌘⇧F**, **/**, or the ⌕ button → find by meaning. Or select text on the page → **⌕ Find related**.
   Hits light up orange on the rail; Enter / ↑↓ steps through them.
 - **Flick fast** → a ticker names what is passing ("Setup → Results → Limitations").
 - **⌘[ / ⌘]** (Alt+←/→) → back / forward through waypoints. A pill appears after each jump.
@@ -47,6 +47,8 @@ references ("the version above") are detected.
   bottom; pin a second for side-by-side. The pane suggests a counterpart ("⇄ compare with: parser v3").
 - **Reference chips** in AI answers (`↑ turn 4 · parser v2`) jump to the original and highlight it.
 - **⚙** on the rail switches between P1 / P2 / P3 / Everything so each prototype can be tested alone.
+  The choice is remembered **per page**, so two fixtures on the same localhost can hold different setups;
+  the API key is remembered per host, so it only needs pasting once.
 
 ## Real ChatGPT
 

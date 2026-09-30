@@ -16,7 +16,7 @@
         this.toolbar = U.el('div', { class: 'sw-rail-tools' }, [
           adapter.hasPrompts ? U.el('button', { class: 'sw-tool', title: 'Previous prompt', onclick: () => this.stepPrompt(-1), text: '▲' }) : null,
           adapter.hasPrompts ? U.el('button', { class: 'sw-tool', title: 'Next prompt', onclick: () => this.stepPrompt(1), text: '▼' }) : null,
-          U.el('button', { class: 'sw-tool', title: `Find (${key})`, onclick: () => SW.find && SW.find.toggle(), text: '⌕' }),
+          this.findBtn = U.el('button', { class: 'sw-tool', title: `Find (${key} or /)`, onclick: () => SW.find && SW.find.toggle(), text: '⌕' }),
           U.el('button', { class: 'sw-tool', title: 'Prototype settings', onclick: (e) => SW.menu && SW.menu.toggle(e.currentTarget), text: '⚙' })
         ]),
         this.track = U.el('div', { class: 'sw-rail-track' }, [
@@ -48,7 +48,11 @@
       this.applySettings();
     },
 
-    applySettings() { this.el.classList.toggle('sw-nomarkers', !SW.settings.markers); },
+    applySettings() {
+      this.el.classList.toggle('sw-nomarkers', !SW.settings.markers);
+      if (this.findBtn) this.findBtn.hidden = !SW.settings.find; // don't offer a switched-off feature
+      if (!SW.settings.find && SW.find && SW.find.box && !SW.find.box.hidden) SW.find.close();
+    },
 
     place() {
       const r = this.scroller.rect();
