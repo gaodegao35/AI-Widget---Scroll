@@ -1,135 +1,117 @@
-# Scroll Widgets — AI Widgets (05-688) · Scrolling
+# Intelligent Scrolling — study app
 
-Three janky prototypes for *scrolling that knows where you're going*, built as one Chrome extension with
-shared plumbing. Each prototype answers one problem from the research phase:
+The website for the IRB-approved study *Including Artificial Intelligence in a UI Widget: Intelligent
+Scrolling* (CMU STUDY2026-00000426). Built to `Intelligent_Scrolling_Study_App_Spec.md`.
 
-| Prototype | Problem from the observations | Features |
+Static pages plus one serverless function. No build step, no framework, no database.
+
+---
+
+## The two conditions
+
+**Intelligent Scrolling (IS)** — exactly the four features the protocol allows, and no others:
+
+| Feature | AI? | When it calls Claude |
 |---|---|---|
-| **P1 · Where is it?** | target location is uncertain → scanning, overshooting; scrollbar markers all look the same | labeled markers · **region preview on hover** · point-to-find · speed ticker · waypoints |
-| **P2 · Take me there & bring me back** | the AI says "see the version above" but you still have to find it; then you lose your place | 1 reference-to-jump · 7 waypoints |
-| **P3 · Two places at once** | comparing two parts → people open a second tab | 10 pin & compare · 7 waypoints |
+| Colored labeled markers beside the scrollbar | yes | once, when a page loads (`labels`) |
+| Hover preview of a part | yes | each time the participant hovers a marker (`preview`) |
+| Search box, keywords or a sentence | yes | when the participant submits (`search`) |
+| Back button to the previous scroll position | no | never |
 
-Feature 7 (waypoints + ⌘[ back) is shared: every AI-driven jump drops a waypoint, so you can always get back.
+**Conventional Scrolling (CS)** — the same pages and styling with the rail removed, the ordinary
+scrollbar, and zero calls to the API. No keyboard shortcut is bound anywhere in the app, so the
+browser's own find (Ctrl/Cmd+F) is never intercepted in either condition.
 
-## Run it
+## Running a session
 
-**Deployed (the normal way).** The site is static pages plus one serverless function. On Vercel, set
-**`ANTHROPIC_API_KEY`** in Project Settings → Environment Variables and deploy — no build step, no framework
-preset. Routes:
+Open the site. The researcher setup screen asks for the phase and session number, shows the computed
+order, and starts the session. Or send a ready-made link: `?phase=2&s=7` (no personal information in
+the URL). Everything after that is in one page — no pop-ups, no new tabs, no dialogs.
 
-| | |
+- **Phase 1** · checklist → introduction → first content page (4 tasks) → second content page
+  (4 tasks) → 8 feedback questions → end. Odd session numbers start on the conversation, even on the
+  document. Both pages use Set A with the AI tool on.
+- **Phase 2** · checklist → introduction → [practice → conversation (4 timed tasks) → document
+  (4 timed tasks) → SUS] → break → [the same for the other condition] → 5 interview questions → end.
+  Order = ((session − 1) mod 4) + 1, per the table in the spec.
+
+Timed tasks: the content is covered until **Start**; the timer counts up in mm:ss and is visible on
+screen for the recording; **Found it / Done** pauses it and offers **Continue** (if the researcher
+says it is not right) and **Next task**; at 2:00 it stops and shows "Time's up, let's move on."
+Task 1 returns the page to the top; Tasks 2–4 do not, so Task 4 starts wherever Task 3 ended.
+Times are shown and then discarded — nothing is kept.
+
+## What is never stored or sent
+
+No database, no `localStorage`, `sessionStorage`, `IndexedDB`, or cookies; no analytics, no session
+replay, no error reporter. Everything lives in one in-memory object, so a refresh clears it, and the
+end screen has a **Clear my answers** button as well.
+
+The only request the browser makes is `POST /api/claude`, and the function whitelists the payload
+before building a prompt: the fictional study content and the participant's typed search text, and
+nothing else. A session code, a timestamp, or anything else a client sent would be dropped on the
+server before the model saw it. `ANTHROPIC_API_KEY` is read from the environment and never reaches
+the browser. The model is `claude-opus-5`, as named in the protocol and consent forms.
+
+## Deploying
+
+Vercel: import the repo, set **`ANTHROPIC_API_KEY`** in Project Settings → Environment Variables for
+Production, deploy. Deployment Protection should be **off** for the production URL, or participants
+hit a Vercel login wall. The pages are served with `X-Robots-Tag: noindex, nofollow`.
+
+Locally, `vercel dev` gives the same thing including the function.
+
+## Content
+
+| File | Holds |
 |---|---|
-| `/` | home — the findings, the two demos, what to press |
-| `/gpt` | 36-turn ChatGPT conversation |
-| `/document` | 24-chapter book (~400 paragraphs) |
-| `/article` | shorter article, used for testing |
-| `/api/claude` | the serverless proxy; the key never reaches the browser |
+| `study/content-a.js` | Set A: a 30-message conversation and a 13-section document |
+| `study/content-b.js` | Set B: matched in length and structure (30 messages, 13 sections) |
+| `study/content-practice.js` | the short practice conversation, unrelated to A and B |
+| `study/tasks.js` | the task sheet, all protocol wording, SUS, feedback and interview questions |
 
-Anyone with the link spends your credits, so keep it unlisted or turn on Deployment Protection.
+All of it is fictional and researcher-written. The simulated chatbot page carries no product name or
+branding; the two speakers are labelled "You" and "Assistant".
 
-**Locally.** `vercel dev` gives you the same thing including `/api/claude`. A plain static server
-(`python3 -m http.server`) also works, but without the function the AI half is unavailable: an amber dot
-appears on the rail and labels and find fall back to heuristics.
+## Decisions for the PI
 
-**As a Chrome extension**, for real chatgpt.com: `chrome://extensions` → Developer mode → Load unpacked →
-`extension/`. Put a key in the extension's Options page. Click the toolbar icon to inject it into any other
-long page.
+1. **Task sheet.** `study/tasks.js` carries *draft* targets and questions, placed so Target 1 falls in
+   the middle third of each page and Target 2 in the last third. Each entry has a `target1Locator` /
+   `target2Locator` phrase for checking placement, and an `answer` field for Task 3 that is never
+   rendered to the participant. Please confirm or replace all four rows before the first session.
+2. **Preview caching.** `widget/widget.js` → `CONFIG.cachePreviews` is **false**, so a preview is
+   generated on every hover, exactly as the protocol describes. Setting it to true reuses a preview
+   within a page. It would not change what is sent to the AI, but it differs from the protocol
+   wording, so it is off until you decide.
+3. **Phase 1 content.** Phase 1 currently reuses Set A, which the spec permits. Say if you want
+   separate Phase 1 pages.
+4. **Failed-label fallback.** If the `labels` call fails, a marker falls back to its own section
+   heading (documents) or "Part N" (conversations), and a **Try again** button appears. This is not
+   AI output and adds no information that is not already on the page; it exists so one failed request
+   does not make the rail useless for the rest of a task. Flagging it in case you would rather the
+   markers stay blank.
 
-## Using it
+## Acceptance checklist
 
-- **Rail** (right edge): colored ticks = prompts / code / images / tables / headings. Hover the rail → a lens lists
-  the nearest items with distinguishing labels; click to jump. ▲▼ at the top hop between *your* prompts.
-- **⌘⇧F**, **/**, or the ⌕ button → find by meaning. Or select text on the page → **⌕ Find related**.
-  Hits light up orange on the rail; Enter / ↑↓ steps through them.
-- **Flick fast** → a ticker names what is passing ("Setup → Results → Limitations").
-- **⌘[ / ⌘]** (Alt+←/→) → back / forward through waypoints. A pill appears after each jump.
-- **Hover a code block / image / table → 📌 Pin.** Or select text → **📌 Pin**. Pinned things stay in a pane at the
-  bottom; pin a second for side-by-side. The pane suggests a counterpart ("⇄ compare with: parser v3").
-- **Reference chips** in AI answers (`↑ turn 4 · parser v2`) jump to the original and highlight it.
-There is no settings panel and nothing to switch on: every page runs the whole widget.
-
-## Real ChatGPT
-
-The extension reads the real conversation DOM (`[data-message-author-role]`) and overlays its UI — nothing is
-faked. For reference chips on the real site, add a ChatGPT custom instruction so the model emits anchors:
-
-> When you refer to something from earlier in this conversation, add a citation right after it in the form
-> `[ref: "short exact phrase from that earlier message"]`.
-
-The widget also understands `[turn N]`. With an API key saved, implicit references ("the version above") are
-detected by Claude and shown as dashed chips.
-
-## Why the fixtures
-
-Real ChatGPT is fine for demos but bad for testing: every participant gets a different conversation, labels would
-have to be computed live, and a selector change can break a session. `fixtures/chat.html` is a scripted 36-turn
-conversation (4 code versions, 4 images, 3 tables, answers that reference earlier turns) with the same DOM
-contract as chatgpt.com and labels pre-computed in `data-label`. The extension can't tell the difference.
-
-- `fixtures/chat.html` — all three prototypes
-- `fixtures/article.html` — long article for P1 + P3
-- `fixtures/document.html` — generated 24-chapter book: stress test for the lazy-labeling rule
-
-## Region preview (the AI half of the marker)
-
-A label tells you *which chapter* a position is — that's structure, and headings give it for free. Hovering asks
-Claude to read the stretch of document around that position (≈10 pages either side, ~9k tokens) and answer the
-question a label can't: *what actually happens here?* It returns what leads up to the position, what is at it, what
-follows, and 2–4 concrete beats ("IntelliMouse wheel, 1996", "read wear (1992)"), so you can decide whether to scroll
-there without going there.
-
-Summaries are cached per region and prefetched: the region you have settled in is warmed while you read, and the
-neighbours of a hovered region are warmed while you look at it (max 2 requests in flight). A cold hover takes ~6 s
-and shows *"reading around this point…"*; a warm one is instant. Turn it off with **Hover preview** in the ⚙ menu.
-
-## The "long document" rule
-
-Nothing is processed for the whole document up front. Headings give the rail its coarse markers instantly; on dense
-documents the rail shows only chapters + figures and keeps sections in the hover lens. Fine (AI) labels are requested
-only for chunks near the viewport or under the rail hover, and cached. Find runs a cheap local match over everything,
-then re-ranks only the top ~12 candidates with Claude. So a 400-paragraph book costs the same as a short chat until you
-actually look at it.
-
-## Test tasks (from the Tab 2 protocol)
-
-| Prototype | Task | Measure |
-|---|---|---|
-| P1 | "Find the picture / passage you remember but don't know where it is" | time, reversals, overshoots, Cmd-F use |
-| P2 | "Ask where X was discussed, go there, then return to where you were reading" | exact line vs. general area; second tab opened? |
-| P3 | "Compare these two versions" | second tab opened? scroll round-trips |
+- [x] No database, storage APIs, cookies for input, or analytics anywhere in the code
+- [x] Refreshing any page clears all typed text and selections
+- [x] Anthropic calls only from the server, only in the IS condition, carrying only content and search text
+- [x] CS condition makes zero AI calls and leaves Ctrl/Cmd+F working
+- [x] The setup screen gives the correct order for session numbers 1–8
+- [x] Phase 2 timer is visible, stops at 2:00, and Task 4 does not reset scroll
+- [x] All task, question, and SUS wording matches Sections 6–9 of the spec exactly
+- [ ] Checked in current Chrome, Edge, Firefox, and Safari on a laptop *(verified in Chrome so far)*
 
 ## Layout
 
 ```
-index.html           home page
-gpt.html             ChatGPT conversation demo      → /gpt
-document.html        24-chapter book demo           → /document
-article.html         article demo                   → /article
-widget-loader.js     loads the widget into a demo page
-vercel.json          clean URLs
-api/claude.js        serverless Claude proxy (ANTHROPIC_API_KEY), shares the prompts in 00-ai-core.js
-extension/
-  manifest.json      MV3; content script on chatgpt.com, toolbar click injects elsewhere
-  background.js      injection + Claude calls for the extension build
-  options.html/js    API key for the extension build
-  src/
-    00-ai-core.js    the four prompts + the Claude call (browser and Node)
-    00-util.js       namespace, Scroller, event bus, AI bridge (extension or /api/claude)
-    01-adapters.js   chatgpt + generic article adapters → chunks
-    02-labeler.js    lazy labels: pre-computed → Claude → heuristic
-    02b-region.js    region preview: ±10 pages → Claude → cached summary, with prefetch
-    03-waypoints.js  jump detection, ⌘[ ⌘], pill, highlight
-    04-rail.js       rail, markers, lens, thumb, prompt arrows, density rule
-    05-find.js       local match + paraphrase table, Claude ranking, selection popover
-    06-ticker.js     speed-dependent overlay
-    07-pins.js       pin pane, side-by-side, counterpart suggestion
-    08-refs.js       [turn N] / [ref: "…"] chips, implicit refs via Claude
-    09-main.js       boot, refresh on DOM change
-    widget.css
+index.html              the whole app shell
+study/app.js            flow: screens, task panel, timer, order computation
+study/study.css         shell styling
+study/content-*.js      fictional content
+study/tasks.js          task sheet and protocol wording
+widget/widget.js        the four features
+widget/widget.css       widget styling
+api/claude.js           server-side Claude proxy; the only place the key is read
+vercel.json             clean URLs, noindex
 ```
-
-## Status
-
-Janky prototype (Sept 16 deadline). Known gaps: no PDF reader yet (Chrome's viewer and Google Docs are closed to
-content scripts — a pdf.js-based reader is the plan for the real prototype); the paraphrase table is small without
-an API key; selectors on chatgpt.com may need a refresh when the site changes.
