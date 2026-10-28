@@ -27,16 +27,22 @@
     maxResults: 6
   };
 
-  const THEME_COLORS = {
-    setup:    '#5b8def',
-    problem:  '#e4572e',
-    method:   '#17a398',
-    finding:  '#8c5bd8',
-    money:    '#d9a406',
-    people:   '#2e9e5b',
-    decision: '#d1467f',
-    other:    '#8a8a95'
+  // Colour says what KIND of content is at that position — text, a picture, code, a table. It is read
+  // from the content itself, not generated, so it is always correct. Claude writes the label text.
+  const TYPES = {
+    text:  { color: '#5b8def', badge: '' },
+    image: { color: '#d1467f', badge: 'img' },
+    code:  { color: '#2e9e5b', badge: 'code' },
+    table: { color: '#d9a406', badge: 'table' }
   };
+  const typeOf = (part) => {
+    const n = part.el;
+    if (n.querySelector('img, svg, figure')) return 'image';
+    if (n.querySelector('pre, code')) return 'code';
+    if (n.querySelector('table')) return 'table';
+    return 'text';
+  };
+  const colorOf = (part) => (TYPES[part.type] || TYPES.text).color;
 
   const el = (tag, attrs = {}, kids = []) => {
     const n = document.createElement(tag);
@@ -76,6 +82,7 @@
       this.previews = new Map();  // cleared with the page; see CONFIG.cachePreviews
       this.inflight = new Set();
       this.hits = new Set();
+      this.parts.forEach(p => { p.type = typeOf(p); });
       this.buildToolbar(toolbarHost);
       this.buildBar();
       this.loadLabels();
@@ -196,8 +203,11 @@
           onfocus: () => { this.openBar(true); this.hoverSeg(p, seg); },
           onblur: () => { this.leaveSeg(); this.openBar(false); }
         }, [
-          el('span', { class: 'isw-stripe', style: `background:${THEME_COLORS[p.theme || 'other']}`, 'aria-hidden': 'true' }),
-          el('span', { class: 'isw-seglabel', text: p.label || '' })
+          el('span', { class: 'isw-stripe', style: `background:${colorOf(p)}`, 'aria-hidden': 'true' }),
+          el('span', { class: 'isw-seglabel' }, [
+            TYPES[p.type].badge ? el('span', { class: 'isw-badge isw-badge-' + p.type, text: TYPES[p.type].badge }) : null,
+            p.label || ''
+          ])
         ]);
         seg._part = p;
         return seg;
@@ -278,13 +288,13 @@
         const byId = new Map((Array.isArray(out) ? out : []).map(r => [String(r.id), r]));
         this.parts.forEach(p => {
           const r = byId.get(p.id);
-          if (r && r.label) { p.label = String(r.label).slice(0, 48); p.theme = THEME_COLORS[r.theme] ? r.theme : 'other'; }
+          if (r && r.label) p.label = String(r.label).slice(0, 48);
         });
         this.setStatus('');
       } catch {
         // Degrade honestly rather than leaving an unusable bar: a document part falls back to its own
         // heading, which is already visible on the page, and a conversation part to its number.
-        this.parts.forEach((p, i) => { if (!p.label) { p.label = p.heading || `Part ${i + 1}`; p.theme = 'other'; p.fallback = true; } });
+        this.parts.forEach((p, i) => { if (!p.label) { p.label = p.heading || `Part ${i + 1}`; p.fallback = true; } });
         this.setStatus("The AI didn't respond. You can keep scrolling or try again.", 'error', () => this.loadLabels());
       }
       this.renderSegments();
@@ -329,7 +339,8 @@
           ? [el('div', { class: 'isw-pv-error', text: "The AI didn't respond. You can keep scrolling or try again." })]
           : [
             el('div', { class: 'isw-pv-head' }, [
-              el('span', { class: 'isw-pv-dot', style: `background:${THEME_COLORS[part.theme || 'other']}`, 'aria-hidden': 'true' }),
+              el('span', { class: 'isw-pv-dot', style: `background:${colorOf(part)}`, 'aria-hidden': 'true' }),
+              TYPES[part.type].badge ? el('span', { class: 'isw-pv-badge', text: TYPES[part.type].badge }) : null,
               part.label || part.heading || ''
             ]),
             el('p', { class: 'isw-pv-text', text: data.summary }),
@@ -376,7 +387,7 @@
         this.resultsPanel.append(el('button', {
           class: 'isw-result', type: 'button', onclick: () => { this.jumpTo(r.part); this.resultsPanel.hidden = true; }
         }, [
-          el('span', { class: 'isw-stripe', style: `background:${THEME_COLORS[r.part.theme || 'other']}`, 'aria-hidden': 'true' }),
+          el('span', { class: 'isw-stripe', style: `background:${colorOf(r.part)}`, 'aria-hidden': 'true' }),
           el('span', {}, [
             el('span', { class: 'isw-result-label', text: r.part.label || r.part.heading || `Part ${i + 1}` }),
             r.why ? el('span', { class: 'isw-result-why', text: r.why }) : null

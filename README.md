@@ -18,6 +18,17 @@ Static pages plus one serverless function. No build step, no framework, no datab
 | Search box, keywords or a sentence | yes | when the participant submits (`search`) |
 | Back button to the previous scroll position | no | never |
 
+Marker colour says what **kind** of content sits at that position. It is read from the content
+itself, never generated, so it cannot be wrong; Claude writes only the label text beside it.
+
+| Colour | Content | Badge |
+|---|---|---|
+| blue | prose | — |
+| magenta | a picture or figure | `IMG` |
+| green | a code or data block | `CODE` |
+| amber | a table | `TABLE` |
+| dark amber, ringed | a search hit (overrides the colour above) | — |
+
 **Conventional Scrolling (CS)** — the same pages and styling with the rail removed, the ordinary
 scrollbar, and zero calls to the API. No keyboard shortcut is bound anywhere in the app, so the
 browser's own find (Ctrl/Cmd+F) is never intercepted in either condition.
@@ -85,7 +96,12 @@ branding; the two speakers are labelled "You" and "Assistant".
    wording, so it is off until you decide.
 3. **Phase 1 content.** Phase 1 currently reuses Set A, which the spec permits. Say if you want
    separate Phase 1 pages.
-4. **Failed-label fallback.** If the `labels` call fails, a marker falls back to its own section
+4. **A fifth feature.** The reference buttons inside an assistant's closing summary — phrases that
+   jump to the exchange they refer to — are arguably a feature beyond the four the protocol lists.
+   Select-to-search is defensible as an input route into the existing search box, but the jump
+   buttons are not. Either remove them before sessions or file a modification. They are confined to
+   `renderWithRefs` / `wireRefs` in `study/app.js` and the authored `refs` arrays in the content.
+5. **Failed-label fallback.** If the `labels` call fails, a marker falls back to its own section
    heading (documents) or "Part N" (conversations), and a **Try again** button appears. This is not
    AI output and adds no information that is not already on the page; it exists so one failed request
    does not make the rail useless for the rest of a task. Flagging it in case you would rather the

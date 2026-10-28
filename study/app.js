@@ -238,6 +238,8 @@
         const block = el('div', { class: 'exchange' }, pair.map(m => {
           const bubble = el('div', { class: 'bubble' });
           m.text.split('\n\n').forEach(t => bubble.append(el('p', {}, renderWithRefs(t, m.refs))));
+          attachBlocks(bubble, m);
+          if (m.after) m.after.split('\n\n').forEach(t => bubble.append(el('p', { text: t })));
           return el('div', { class: 'msg msg-' + m.role }, [
             el('div', { class: 'avatar', 'aria-hidden': 'true', text: m.role === 'user' ? 'Y' : 'A' }),
             el('div', { class: 'msg-body' }, [
@@ -259,6 +261,7 @@
           el('h2', { text: sec.heading }),
           ...sec.paras.map(t => el('p', { text: t }))
         ]);
+        attachBlocks(block, sec);
         inner.append(block);
         parts.push({ id: 'p' + (parts.length + 1), el: block, heading: sec.heading, text: sec.paras.join('\n\n') });
       });
@@ -288,6 +291,30 @@
     }
 
     return { stage, wrap, scroller, parts };
+  }
+
+  // An assistant message may carry a picture, a code block, or a table. These are what give the
+  // markers something other than prose to point at, and they are fictional like the rest.
+  function attachBlocks(bubble, m) {
+    if (m.image) {
+      const fig = el('figure', { class: 'msg-figure' });
+      const holder = el('div', { class: 'msg-figure-art', role: 'img', 'aria-label': m.image.alt });
+      holder.innerHTML = m.image.svg;          // researcher-authored markup, not user input
+      fig.append(holder, el('figcaption', { text: m.image.caption || m.image.alt }));
+      bubble.append(fig);
+    }
+    if (m.code) {
+      bubble.append(el('pre', { class: 'msg-code' }, [
+        el('span', { class: 'msg-code-lang', text: m.code.lang }),
+        el('code', { text: m.code.body })
+      ]));
+    }
+    if (m.table) {
+      bubble.append(el('table', { class: 'msg-table' }, [
+        el('thead', {}, [el('tr', {}, m.table.headers.map(h => el('th', { text: h })))]),
+        el('tbody', {}, m.table.rows.map(r => el('tr', {}, r.map(c => el('td', { text: c })))))
+      ]));
+    }
   }
 
   // Turn authored back-references into buttons that jump to the part they point at.

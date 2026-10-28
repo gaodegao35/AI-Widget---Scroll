@@ -15,18 +15,19 @@ const PROMPTS = {
   // Feature 1: colored labeled markers, generated when a page loads.
   labels: (p) => `Below are the numbered parts of a ${p.kind === 'conversation' ? 'conversation between a person and an AI assistant' : 'document'}.
 
-For each part, write a label a reader can use to decide whether to scroll there, and assign a theme.
+For each part, write a label a reader can use to decide whether to scroll there.
 
-Rules for labels:
+Rules:
 - 2 to 5 words. No trailing punctuation.
 - Name the specific subject of that part: "insurance for power tools", not "a discussion" or "more details".
 - Every label must be distinguishable from the others. If two parts are similar, say what makes them different.
 - Use the words of the content, not meta-description. Never begin with "the part where" or "discussion of".
 
-Themes, choose exactly one per part: setup, problem, method, finding, money, people, decision.
+- If the part contains a picture, a code block, or a table, say what that thing is about rather than
+  naming it: "red bicycle logo", not "an image".
 
 Return ONLY a JSON array, one entry per part, in order:
-[{"id": "...", "label": "...", "theme": "..."}]
+[{"id": "...", "label": "..."}]
 
 Parts:
 ${JSON.stringify(p.sections)}`,
