@@ -4,7 +4,12 @@
  *   3. search box taking keywords or a sentence (sent when the participant submits)
  *   4. back button (no AI) returning to the previous scroll position
  *
- * Constraints this file respects:
+ * Shape: the markers ARE the scrollbar. The bar is narrow and segmented by part, with a draggable
+ * thumb showing the viewport, so it behaves like a scrollbar. Hovering it widens the bar to reveal
+ * the labels; hovering one segment asks Claude for a fuller preview of that part. Back and search
+ * live in a slim toolbar above the content so both stay discoverable without a click.
+ *
+ * Constraints respected here:
  *   - No storage of any kind: no localStorage, sessionStorage, IndexedDB, or cookies.
  *   - No analytics, no logging of what the participant does.
  *   - No global keyboard shortcuts, so the browser's own find (Ctrl/Cmd+F) is never intercepted.
@@ -18,7 +23,7 @@
     // fixed study content would not change what is sent to the AI, but it differs from that
     // description, so it is off until the PI confirms. Set to true to reuse a preview within a page.
     cachePreviews: false,
-    hoverDelayMs: 350,   // only a deliberate hover asks for a preview
+    hoverDelayMs: 320,   // only a deliberate hover asks for a preview
     maxResults: 6
   };
 
@@ -30,10 +35,9 @@
     money:    '#d9a406',
     people:   '#2e9e5b',
     decision: '#d1467f',
-    other:    '#7a7a86'
+    other:    '#8a8a95'
   };
 
-  // ---------- small helpers ----------
   const el = (tag, attrs = {}, kids = []) => {
     const n = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
@@ -59,13 +63,12 @@
     return data.result;
   }
 
-  /* ============================ the widget ============================ */
-
   class ScrollWidget {
-    /** @param {HTMLElement} scroller the scrolling content element
+    /** @param {HTMLElement} scroller scrolling content element
      *  @param {Array} parts [{id, el, heading, text}] in document order
-     *  @param {'conversation'|'document'} kind */
-    constructor(scroller, parts, kind) {
+     *  @param {'conversation'|'document'} kind
+     *  @param {HTMLElement} toolbarHost where the back button and search box go */
+    constructor(scroller, parts, kind, toolbarHost) {
       this.scroller = scroller;
       this.parts = parts;
       this.kind = kind;
@@ -73,56 +76,200 @@
       this.previews = new Map();  // cleared with the page; see CONFIG.cachePreviews
       this.inflight = new Set();
       this.hits = new Set();
-      this.build();
+      this.buildToolbar(toolbarHost);
+      this.buildBar();
       this.loadLabels();
     }
 
-    /* ---------- chrome ---------- */
-    build() {
-      this.root = el('div', { class: 'isw', role: 'complementary', 'aria-label': 'Page navigator' }, [
-        el('div', { class: 'isw-top' }, [
-          this.backBtn = el('button', {
-            class: 'isw-back', type: 'button', disabled: true,
-            title: 'Return to where you were before the last jump',
-            onclick: () => this.goBack()
-          }, [el('span', { class: 'isw-back-arrow', 'aria-hidden': 'true', text: '↩' }), 'Back']),
-          el('form', {
-            class: 'isw-searchform', onsubmit: (e) => { e.preventDefault(); this.runSearch(); }
-          }, [
-            this.input = el('input', {
-              class: 'isw-input', type: 'search', placeholder: 'Search this page',
-              'aria-label': 'Search this page. Type keywords or a sentence.',
-              autocomplete: 'off', spellcheck: 'false'
-            }),
-            this.searchBtn = el('button', { class: 'isw-go', type: 'submit', title: 'Search' }, '→')
-          ]),
-          el('p', { class: 'isw-privacy', text: "Please don't type personal information." })
+    /* ---------- toolbar: back + search ---------- */
+    buildToolbar(host) {
+      this.toolbar = el('div', { class: 'isw-toolbar' }, [
+        this.backBtn = el('button', {
+          class: 'isw-back', type: 'button', disabled: true,
+          title: 'Return to where you were before the last jump',
+          onclick: () => this.goBack()
+        }, [el('span', { class: 'isw-back-arrow', 'aria-hidden': 'true', text: '↩' }), 'Back']),
+        el('form', { class: 'isw-searchform', onsubmit: (e) => { e.preventDefault(); this.runSearch(); } }, [
+          this.input = el('input', {
+            class: 'isw-input', type: 'search', placeholder: 'Search this page — keywords or a sentence',
+            'aria-label': 'Search this page. Type keywords or a sentence.',
+            autocomplete: 'off', spellcheck: 'false'
+          }),
+          this.searchBtn = el('button', { class: 'isw-go', type: 'submit' }, 'Search')
         ]),
-        this.status = el('div', { class: 'isw-status', role: 'status', 'aria-live': 'polite' }),
-        this.track = el('div', { class: 'isw-track' })
+        el('span', { class: 'isw-privacy', text: "Please don't type personal information." }),
+        this.status = el('span', { class: 'isw-status', role: 'status', 'aria-live': 'polite' })
+      ]);
+      this.resultsPanel = el('div', { class: 'isw-results-panel', hidden: true });
+      this.toolbar.append(this.resultsPanel);
+      host.append(this.toolbar);
+    }
+
+    /* ---------- the labeled scrollbar ---------- */
+    buildBar() {
+      this.bar = el('div', {
+        class: 'isw-bar', role: 'navigation', 'aria-label': 'Page map',
+        onmouseenter: () => this.openBar(true),
+        onmouseleave: () => this.openBar(false)
+      }, [
+        this.segs = el('div', { class: 'isw-segs' }),
+        this.thumb = el('div', { class: 'isw-thumb', 'aria-hidden': 'true' })
       ]);
       this.preview = el('div', { class: 'isw-preview', hidden: true, role: 'tooltip' });
       document.body.append(this.preview);
-      this.scroller.parentElement.append(this.root);
+      this.scroller.parentElement.append(this.bar);
+
+      // drag the thumb, and click the bar, like an ordinary scrollbar
+      this.thumb.addEventListener('mousedown', (e) => this.startDrag(e));
+      this.bar.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.isw-seg') || e.target === this.thumb) return;
+        this.scrubTo(e.clientY, true);
+        this.startDrag(e, true);
+      });
+
+      this.selPop = el('div', { class: 'isw-selpop', hidden: true });
+      document.body.append(this.selPop);
+      this.onSelect = () => this.onSelection();
+      this.scroller.addEventListener('mouseup', this.onSelect);
+      this.hideSel = (e) => { if (!e.target.closest('.isw-selpop')) this.selPop.hidden = true; };
+      document.addEventListener('mousedown', this.hideSel);
 
       this.onScroll = () => this.onScrollTick();
       this.scroller.addEventListener('scroll', this.onScroll, { passive: true });
-      // relayout when the content resizes and when the results list changes the track's height
       this.resizeObs = new ResizeObserver(() => this.layout());
       this.resizeObs.observe(this.scroller);
-      this.resizeObs.observe(this.track);
       this.lastSettled = this.scroller.scrollTop;
-      this.renderChips();
+      this.renderSegments();
+    }
+
+    // Selecting a phrase offers it to the search box — the same feature, reached by pointing.
+    onSelection() {
+      setTimeout(() => {
+        const sel = window.getSelection();
+        const text = sel && sel.toString().trim();
+        if (!text || text.length < 3 || text.length > 160 || !sel.rangeCount) { this.selPop.hidden = true; return; }
+        const r = sel.getRangeAt(0).getBoundingClientRect();
+        this.selPop.textContent = '';
+        this.selPop.append(el('button', {
+          class: 'isw-selbtn', type: 'button',
+          onclick: () => { this.input.value = text; this.selPop.hidden = true; this.runSearch(); }
+        }, [el('span', { 'aria-hidden': 'true', text: '⌕' }), ' Search for this']));
+        this.selPop.hidden = false;
+        this.selPop.style.left = clamp(r.left + r.width / 2 - this.selPop.offsetWidth / 2, 8, window.innerWidth - this.selPop.offsetWidth - 8) + 'px';
+        this.selPop.style.top = Math.max(8, r.top - this.selPop.offsetHeight - 8) + 'px';
+      }, 10);
     }
 
     destroy() {
+      this.scroller.removeEventListener('mouseup', this.onSelect);
+      document.removeEventListener('mousedown', this.hideSel);
+      this.selPop.remove();
       this.scroller.removeEventListener('scroll', this.onScroll);
       this.resizeObs.disconnect();
-      this.root.remove();
+      window.removeEventListener('mousemove', this.dragMove);
+      window.removeEventListener('mouseup', this.dragEnd);
+      this.bar.remove();
+      this.toolbar.remove();
       this.preview.remove();
     }
 
-    /* ---------- feature 1: colored labeled markers ---------- */
+    openBar(open) {
+      clearTimeout(this.closeTimer);
+      if (open) { this.bar.classList.add('isw-open'); return; }
+      this.closeTimer = setTimeout(() => {
+        this.bar.classList.remove('isw-open');
+        this.preview.hidden = true;
+        this.hoverPart = null;
+      }, 180);
+    }
+
+    renderSegments() {
+      this.segs.textContent = '';
+      this.segEls = this.parts.map((p, i) => {
+        const seg = el('button', {
+          class: 'isw-seg' + (p.label ? '' : ' isw-seg-wait') + (this.hits.has(p.id) ? ' isw-hit' : ''),
+          type: 'button',
+          'aria-label': p.label ? `Go to: ${p.label}` : `Part ${i + 1}, label loading`,
+          onclick: () => this.jumpTo(p),
+          onmouseenter: () => this.hoverSeg(p, seg),
+          onmouseleave: () => this.leaveSeg(),
+          onfocus: () => { this.openBar(true); this.hoverSeg(p, seg); },
+          onblur: () => { this.leaveSeg(); this.openBar(false); }
+        }, [
+          el('span', { class: 'isw-stripe', style: `background:${THEME_COLORS[p.theme || 'other']}`, 'aria-hidden': 'true' }),
+          el('span', { class: 'isw-seglabel', text: p.label || '' })
+        ]);
+        seg._part = p;
+        return seg;
+      });
+      this.segEls.forEach(s => this.segs.append(s));
+      this.layout();
+    }
+
+    offsetOf(node) {
+      return node.getBoundingClientRect().top - this.scroller.getBoundingClientRect().top + this.scroller.scrollTop;
+    }
+
+    // Each segment covers the same share of the bar as its part covers of the document, so the bar
+    // is a true map of the page rather than an evenly spaced list.
+    layout() {
+      if (!this.segEls || !this.segEls.length) return;
+      const total = Math.max(1, this.scroller.scrollHeight);
+      const h = this.segs.clientHeight;
+      const MIN = 15;
+      const tops = this.parts.map(p => this.offsetOf(p.el));
+      this.segEls.forEach((seg, i) => {
+        const start = tops[i];
+        const end = i + 1 < tops.length ? tops[i + 1] : total;
+        const top = (start / total) * h;
+        const height = Math.max(MIN, ((end - start) / total) * h);
+        seg.style.top = clamp(top, 0, Math.max(0, h - MIN)) + 'px';
+        seg.style.height = Math.min(height, Math.max(MIN, h - top)) + 'px';
+      });
+      this.updateThumb();
+    }
+
+    updateThumb() {
+      const total = Math.max(1, this.scroller.scrollHeight);
+      const h = this.segs.clientHeight;
+      const view = this.scroller.clientHeight;
+      this.thumb.style.top = (this.scroller.scrollTop / total) * h + 'px';
+      this.thumb.style.height = Math.max(22, (view / total) * h) + 'px';
+      if (!this.segEls) return;
+      const top = this.scroller.scrollTop, bottom = top + view;
+      this.segEls.forEach(seg => {
+        const y = this.offsetOf(seg._part.el);
+        seg.classList.toggle('isw-here', y >= top - 40 && y < bottom);
+      });
+    }
+
+    /* dragging the thumb scrolls the page */
+    startDrag(e, already) {
+      e.preventDefault();
+      this.bar.classList.add('isw-dragging');
+      if (!already) this.pushHistory(this.scroller.scrollTop);
+      this.dragMove = (ev) => this.scrubTo(ev.clientY, false);
+      this.dragEnd = () => {
+        this.bar.classList.remove('isw-dragging');
+        window.removeEventListener('mousemove', this.dragMove);
+        window.removeEventListener('mouseup', this.dragEnd);
+        this.lastSettled = this.scroller.scrollTop;
+      };
+      window.addEventListener('mousemove', this.dragMove);
+      window.addEventListener('mouseup', this.dragEnd);
+    }
+
+    scrubTo(clientY, record) {
+      const r = this.segs.getBoundingClientRect();
+      const frac = clamp((clientY - r.top) / Math.max(1, r.height), 0, 1);
+      if (record) this.pushHistory(this.scroller.scrollTop);
+      this.suppress = true;
+      this.scroller.scrollTop = frac * this.scroller.scrollHeight - this.scroller.clientHeight / 2;
+      clearTimeout(this.unsuppress);
+      this.unsuppress = setTimeout(() => { this.suppress = false; this.lastSettled = this.scroller.scrollTop; }, 120);
+    }
+
+    /* ---------- feature 1: labels ---------- */
     async loadLabels() {
       this.setStatus('Reading the page…', 'busy');
       try {
@@ -135,112 +282,56 @@
         });
         this.setStatus('');
       } catch {
-        // Degrade honestly rather than leaving an unusable rail: a document part falls back to its
-        // own heading, which is already visible on the page, and a conversation part to its number.
-        // Neither is AI-generated, and the retry button lets the participant ask again.
+        // Degrade honestly rather than leaving an unusable bar: a document part falls back to its own
+        // heading, which is already visible on the page, and a conversation part to its number.
         this.parts.forEach((p, i) => { if (!p.label) { p.label = p.heading || `Part ${i + 1}`; p.theme = 'other'; p.fallback = true; } });
         this.setStatus("The AI didn't respond. You can keep scrolling or try again.", 'error', () => this.loadLabels());
       }
-      this.renderChips();
-    }
-
-    renderChips() {
-      this.track.textContent = '';
-      this.chips = this.parts.map((p, i) => {
-        const labelled = !!p.label;
-        const chip = el('button', {
-          class: 'isw-chip' + (labelled ? '' : ' isw-chip-wait') + (this.hits.has(p.id) ? ' isw-hit' : ''),
-          type: 'button',
-          'data-id': p.id,
-          'aria-label': labelled ? `Go to: ${p.label}` : 'Loading label',
-          onclick: () => this.jumpTo(p),
-          onmouseenter: () => this.hoverChip(p, chip),
-          onmouseleave: () => this.leaveChip(),
-          onfocus: () => this.hoverChip(p, chip),
-          onblur: () => this.leaveChip()
-        }, [
-          el('span', { class: 'isw-dot', style: `background:${THEME_COLORS[p.theme || 'other']}`, 'aria-hidden': 'true' }),
-          el('span', { class: 'isw-label', text: labelled ? p.label : '·····' })
-        ]);
-        chip._part = p;
-        return chip;
-      });
-      this.chips.forEach(c => this.track.append(c));
-      this.layout();
-    }
-
-    // Position each chip at its share of the scroll height, then push overlapping ones down.
-    layout() {
-      if (!this.chips || !this.chips.length) return;
-      const total = Math.max(1, this.scroller.scrollHeight);
-      const h = this.track.clientHeight;
-      const gap = 2;
-      let prevBottom = -Infinity;
-      this.chips.forEach(chip => {
-        const p = chip._part;
-        const y = this.offsetOf(p.el);
-        const ideal = (y / total) * h;
-        const ch = chip.offsetHeight || 24;
-        const top = clamp(Math.max(ideal, prevBottom + gap), 0, Math.max(0, h - ch));
-        chip.style.top = top + 'px';
-        prevBottom = top + ch;
-      });
-      this.markViewport();
-    }
-
-    offsetOf(node) {
-      return node.getBoundingClientRect().top - this.scroller.getBoundingClientRect().top + this.scroller.scrollTop;
-    }
-
-    markViewport() {
-      if (!this.chips) return;
-      const top = this.scroller.scrollTop, bottom = top + this.scroller.clientHeight;
-      this.chips.forEach(chip => {
-        const y = this.offsetOf(chip._part.el);
-        chip.classList.toggle('isw-here', y >= top - 40 && y < bottom);
-      });
+      this.renderSegments();
     }
 
     /* ---------- feature 2: hover preview ---------- */
-    hoverChip(part, chip) {
+    hoverSeg(part, seg) {
       clearTimeout(this.hoverTimer);
+      clearTimeout(this.hideTimer);
       this.hoverPart = part;
       const cached = CONFIG.cachePreviews ? this.previews.get(part.id) : null;
-      if (cached) return this.showPreview(part, chip, cached);
-      this.hoverTimer = setTimeout(() => this.fetchPreview(part, chip), CONFIG.hoverDelayMs);
+      if (cached) return this.showPreview(part, seg, cached);
+      this.hoverTimer = setTimeout(() => this.fetchPreview(part, seg), CONFIG.hoverDelayMs);
     }
 
-    leaveChip() {
+    leaveSeg() {
       clearTimeout(this.hoverTimer);
       this.hideTimer = setTimeout(() => { this.preview.hidden = true; this.hoverPart = null; }, 160);
     }
 
-    async fetchPreview(part, chip) {
+    async fetchPreview(part, seg) {
       if (this.inflight.has(part.id)) return;
       this.inflight.add(part.id);
-      this.showPreview(part, chip, { loading: true });
+      this.showPreview(part, seg, { loading: true });
       try {
-        const out = await askClaude('preview', {
-          kind: this.kind, heading: part.heading || '', text: part.text.slice(0, 6000)
-        });
+        const out = await askClaude('preview', { kind: this.kind, heading: part.heading || '', text: part.text.slice(0, 6000) });
         const data = { summary: String(out && out.summary || ''), points: Array.isArray(out && out.points) ? out.points.slice(0, 4) : [] };
         if (CONFIG.cachePreviews) this.previews.set(part.id, data);
-        if (this.hoverPart === part) this.showPreview(part, chip, data);
+        if (this.hoverPart === part) this.showPreview(part, seg, data);
       } catch {
-        if (this.hoverPart === part) this.showPreview(part, chip, { error: true });
+        if (this.hoverPart === part) this.showPreview(part, seg, { error: true });
       } finally {
         this.inflight.delete(part.id);
       }
     }
 
-    showPreview(part, chip, data) {
+    showPreview(part, seg, data) {
       clearTimeout(this.hideTimer);
       const body = data.loading
         ? [el('div', { class: 'isw-pv-loading', text: 'Looking at this part…' })]
         : data.error
           ? [el('div', { class: 'isw-pv-error', text: "The AI didn't respond. You can keep scrolling or try again." })]
           : [
-            part.heading ? el('div', { class: 'isw-pv-head', text: part.heading }) : null,
+            el('div', { class: 'isw-pv-head' }, [
+              el('span', { class: 'isw-pv-dot', style: `background:${THEME_COLORS[part.theme || 'other']}`, 'aria-hidden': 'true' }),
+              part.label || part.heading || ''
+            ]),
             el('p', { class: 'isw-pv-text', text: data.summary }),
             data.points && data.points.length
               ? el('ul', { class: 'isw-pv-points' }, data.points.map(pt => el('li', { text: String(pt) })))
@@ -249,16 +340,16 @@
       this.preview.textContent = '';
       body.filter(Boolean).forEach(n => this.preview.append(n));
       this.preview.hidden = false;
-      const r = chip.getBoundingClientRect();
-      const rootR = this.root.getBoundingClientRect();
-      this.preview.style.right = (window.innerWidth - rootR.left + 8) + 'px';
+      const r = seg.getBoundingClientRect();
+      const barR = this.bar.getBoundingClientRect();
+      this.preview.style.right = (window.innerWidth - barR.left + 10) + 'px';
       this.preview.style.top = clamp(r.top + r.height / 2 - this.preview.offsetHeight / 2, 8, Math.max(8, window.innerHeight - this.preview.offsetHeight - 8)) + 'px';
     }
 
     /* ---------- feature 3: search ---------- */
     async runSearch() {
       const q = this.input.value.trim();
-      if (!q) { this.clearHits(); this.setStatus(''); return; }
+      if (!q) { this.clearHits(); this.setStatus(''); this.resultsPanel.hidden = true; return; }
       this.searchBtn.disabled = true;
       this.setStatus('Searching…', 'busy');
       try {
@@ -276,35 +367,31 @@
 
     showResults(results) {
       this.hits = new Set(results.map(r => r.part.id));
-      this.chips.forEach(c => c.classList.toggle('isw-hit', this.hits.has(c._part.id)));
-      this.status.textContent = '';
-      this.status.className = 'isw-status';
-      if (!results.length) { this.setStatus('No matching parts.'); return; }
-      const list = el('ul', { class: 'isw-results' }, results.map((r, i) =>
-        el('li', {}, [
-          el('button', {
-            class: 'isw-result', type: 'button', onclick: () => this.jumpTo(r.part)
-          }, [
-            el('span', { class: 'isw-dot', style: `background:${THEME_COLORS[r.part.theme || 'other']}`, 'aria-hidden': 'true' }),
-            el('span', {}, [
-              el('span', { class: 'isw-result-label', text: r.part.label || r.part.heading || `Part ${i + 1}` }),
-              r.why ? el('span', { class: 'isw-result-why', text: r.why }) : null
-            ])
+      if (this.segEls) this.segEls.forEach(s => s.classList.toggle('isw-hit', this.hits.has(s._part.id)));
+      this.setStatus(results.length ? `${results.length} result${results.length === 1 ? '' : 's'}` : 'No matching parts.');
+      this.resultsPanel.textContent = '';
+      this.resultsPanel.hidden = results.length === 0;
+      if (!results.length) return;
+      results.forEach((r, i) => {
+        this.resultsPanel.append(el('button', {
+          class: 'isw-result', type: 'button', onclick: () => { this.jumpTo(r.part); this.resultsPanel.hidden = true; }
+        }, [
+          el('span', { class: 'isw-stripe', style: `background:${THEME_COLORS[r.part.theme || 'other']}`, 'aria-hidden': 'true' }),
+          el('span', {}, [
+            el('span', { class: 'isw-result-label', text: r.part.label || r.part.heading || `Part ${i + 1}` }),
+            r.why ? el('span', { class: 'isw-result-why', text: r.why }) : null
           ])
-        ])
-      ));
-      this.status.append(
-        el('div', { class: 'isw-results-head' }, [
-          `${results.length} result${results.length === 1 ? '' : 's'}`,
-          el('button', { class: 'isw-clear', type: 'button', onclick: () => { this.input.value = ''; this.clearHits(); this.setStatus(''); } }, 'Clear')
-        ]),
-        list
-      );
+        ]));
+      });
+      this.resultsPanel.append(el('button', {
+        class: 'isw-clear', type: 'button',
+        onclick: () => { this.input.value = ''; this.clearHits(); this.setStatus(''); this.resultsPanel.hidden = true; }
+      }, 'Clear results'));
     }
 
     clearHits() {
       this.hits = new Set();
-      if (this.chips) this.chips.forEach(c => c.classList.remove('isw-hit'));
+      if (this.segEls) this.segEls.forEach(s => s.classList.remove('isw-hit'));
     }
 
     setStatus(text, kind, retry) {
@@ -317,8 +404,7 @@
     /* ---------- feature 4: back ---------- */
     jumpTo(part) {
       this.pushHistory(this.scroller.scrollTop);
-      const y = this.offsetOf(part.el) - 24;
-      this.scrollTo(y);
+      this.scrollTo(this.offsetOf(part.el) - 24);
       this.flash(part.el);
       this.preview.hidden = true;
     }
@@ -338,9 +424,7 @@
       this.updateBack();
     }
 
-    updateBack() {
-      this.backBtn.disabled = this.history.length === 0;
-    }
+    updateBack() { this.backBtn.disabled = this.history.length === 0; }
 
     scrollTo(y) {
       this.suppress = true;
@@ -354,14 +438,13 @@
           clearInterval(this.anim);
           this.suppress = false;
           this.lastSettled = this.scroller.scrollTop;
-          this.markViewport();
+          this.updateThumb();
         }
       }, 16);
     }
 
-    // A long manual scroll is also something to come back from.
     onScrollTick() {
-      this.markViewport();
+      this.updateThumb();
       if (this.suppress) return;
       clearTimeout(this.settleTimer);
       this.settleTimer = setTimeout(() => {

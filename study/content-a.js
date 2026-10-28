@@ -34,7 +34,17 @@ window.STUDY_CONTENT.A = {
       { role: 'user', text: 'Who keeps all of this running? We are all volunteers.' },
       { role: 'assistant', text: 'Name three roles and fill them before you open: a coordinator who owns the calendar, a keeper who owns the tools and their repair, and a treasurer. One person can hold two of these; nobody should hold all three.\n\nThen recruit shift volunteers in pairs rather than singly. Pairs show up. A single volunteer with a conflict means a closed library and a wasted trip for everyone who came.' },
       { role: 'user', text: 'Last thing — how do we know if it is working?' },
-      { role: 'assistant', text: 'Count three things monthly and nothing else at first: how many items went out, how many distinct members borrowed, and how many items are overdue.\n\nThe second number is the one to watch. A library where thirty members each borrow once a season is healthier than one where four enthusiasts borrow constantly. If the distinct-borrower count stalls while loans rise, your collection is serving a small group well and everyone else not at all, and the fix is usually the collection, not the marketing.' }
+      { role: 'assistant', text: 'Count three things monthly and nothing else at first: how many items went out, how many distinct members borrowed, and how many items are overdue.\n\nThe second number is the one to watch. A library where thirty members each borrow once a season is healthier than one where four enthusiasts borrow constantly. If the distinct-borrower count stalls while loans rise, your collection is serving a small group well and everyone else not at all, and the fix is usually the collection, not the marketing.' },
+      { role: 'user', text: 'Can you pull the whole thing together for me?' },
+      { role: 'assistant',
+        text: 'Here is the shape of it. Decide what you lend, where it lives, and who is responsible, before you accept donations. Start at sixty to eighty items with a cap of three tools at a time. Take the shared building over the garage. Lend power tools only with a waiver, a demonstration, and written confirmation from the insurer. Fund it with waivable membership rather than per-loan fees. Write the overdue policy down before you need it, with a daily fee and a ceiling. Name a coordinator, a keeper and a treasurer, and roster volunteers in pairs.\n\nThe one thing I would not defer is the insurance letter. Everything else can be fixed after opening.',
+        refs: [
+          { phrase: 'a cap of three tools at a time', part: 3 },
+          { phrase: 'the shared building over the garage', part: 4 },
+          { phrase: 'written confirmation from the insurer', part: 8 },
+          { phrase: 'the overdue policy', part: 12 },
+          { phrase: 'a coordinator, a keeper and a treasurer', part: 14 }
+        ] }
     ]
   },
 

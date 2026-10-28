@@ -34,7 +34,17 @@ window.STUDY_CONTENT.B = {
       { role: 'user', text: 'Who keeps the whole thing running day to day?' },
       { role: 'assistant', text: 'Name three roles and fill them before you launch: a station manager who owns the schedule, a technical lead who owns the equipment, and a treasurer. One person may hold two; nobody should hold all three.\n\nThen pair your volunteers rather than rostering them singly. A single volunteer with a conflict means dead air, and dead air on a community station is remembered far longer than a good programme.' },
       { role: 'user', text: 'Last question — how do we tell whether it is working?' },
-      { role: 'assistant', text: 'Count three things monthly and ignore the rest at first: hours of original programming broadcast, number of distinct presenters on air, and number of shows that failed to go out as scheduled.\n\nThe second number is the one to watch. A station where twenty people each present occasionally is healthier than one where four people carry everything, even if the four are better broadcasters. If distinct presenters stall while hours rise, you are building a station that will collapse when one person moves away.' }
+      { role: 'assistant', text: 'Count three things monthly and ignore the rest at first: hours of original programming broadcast, number of distinct presenters on air, and number of shows that failed to go out as scheduled.\n\nThe second number is the one to watch. A station where twenty people each present occasionally is healthier than one where four people carry everything, even if the four are better broadcasters. If distinct presenters stall while hours rise, you are building a station that will collapse when one person moves away.' },
+      { role: 'user', text: 'Can you pull the whole thing together for me?' },
+      { role: 'assistant',
+        text: 'Here is the shape of it. Settle the licence, the studio, and who decides the schedule, before you audition anyone. Aim at twenty hours of original programming and keep the studio open forty hours a week. Take the library room over the space above the shop. Treat the antenna siting as the decision that determines your coverage, and do not describe a valley-floor site as if it reached the whole town. Fund it with business supporters and waivable membership. Put the schedule criteria in writing before the first argument. Require the introductory course and the annual refresher from every presenter.\n\nThe one thing I would not defer is the schedule criteria. Everything else can be fixed after launch.',
+        refs: [
+          { phrase: 'forty hours a week', part: 3 },
+          { phrase: 'the library room over the space above the shop', part: 4 },
+          { phrase: 'the antenna siting', part: 7 },
+          { phrase: 'the schedule criteria in writing', part: 11 },
+          { phrase: 'the introductory course and the annual refresher', part: 13 }
+        ] }
     ]
   },
 

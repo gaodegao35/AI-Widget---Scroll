@@ -69,11 +69,7 @@ input[type="number"].field { width: 120px; }
 /* ---- content screens ---- */
 .content-screen { height: 100%; display: flex; flex-direction: column; background: #fff; }
 .stage { position: relative; flex: 1; min-height: 0; }
-.page-scroll {
-  position: absolute; inset: 0 232px 0 0; overflow-y: auto; scroll-behavior: auto;
-  padding: 36px 40px 120px;
-}
-.stage-plain .page-scroll { right: 0; }
+.page-scroll { overflow-y: auto; scroll-behavior: auto; padding: 32px 36px 90px; }
 .page-scroll:focus { outline: none; }
 .page-inner { max-width: 720px; margin: 0 auto; }
 .page-title { font-size: 28px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.015em; }
@@ -88,11 +84,11 @@ input[type="number"].field { width: 120px; }
 .who { display: block; font-size: 11.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--dim); margin-bottom: 5px; }
 .bubble p { margin: 0 0 10px; }
 .bubble p:last-child { margin-bottom: 0; }
-.msg-user .bubble { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.msg-user .bubble { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 11px 15px; }
 
 /* cover shown before a timed task starts, and when time is up */
 .cover {
-  position: absolute; inset: 0 232px 0 0; z-index: 5;
+  z-index: 15;
   display: flex; align-items: center; justify-content: center;
   background: rgba(247,247,249,.86); backdrop-filter: blur(7px);
   color: var(--dim); font-size: 15px;
@@ -114,6 +110,55 @@ input[type="number"].field { width: 120px; }
 
 @media (max-width: 860px) {
   .card { padding: 28px 24px; }
-  .page-scroll, .cover { right: 0; }
-  .isw { display: none; }
+  .scrollwrap .page-scroll, .scrollwrap .cover { right: 0; }
+  .isw-bar { display: none; }
+  .chat-side { display: none; }
 }
+
+/* ---- chat application chrome (conversation pages) ---- */
+.toolbar-host:empty { display: none; }
+.chatapp { position: absolute; inset: 0; display: flex; background: #fff; }
+.chat-side {
+  flex: none; width: 212px; background: #f7f7f9; border-right: 1px solid var(--line);
+  padding: 14px 10px; overflow: hidden;
+}
+.chat-side-head { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--dim); padding: 0 8px 10px; }
+.chat-conv { font-size: 13.5px; color: #4a4a55; padding: 8px 10px; border-radius: 8px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-conv-on { background: #e9e9f1; color: var(--ink); font-weight: 600; }
+.chat-main { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
+.chat-head { flex: none; padding: 11px 20px; border-bottom: 1px solid var(--line); }
+.chat-title { font-size: 14.5px; font-weight: 600; }
+.chat-composer {
+  flex: none; padding: 14px 24px 18px; border-top: 1px solid var(--line); background: #fff;
+}
+.chat-composer span {
+  display: block; max-width: 720px; margin: 0 auto; background: #f2f2f5; border: 1px solid var(--line);
+  border-radius: 22px; padding: 13px 20px; color: #9a9aa4; font-size: 15px; user-select: none;
+}
+.docapp { position: absolute; inset: 0; background: #fff; }
+.scrollwrap { position: relative; flex: 1; min-height: 0; }
+.scrollwrap .page-scroll { position: absolute; inset: 0; right: 34px; }
+.stage-plain .scrollwrap .page-scroll { right: 0; }
+.scrollwrap .cover { position: absolute; inset: 0; right: 34px; }
+.stage-plain .scrollwrap .cover { right: 0; }
+
+/* chat bubbles */
+.page-conversation { max-width: 760px; }
+.msg { display: flex; gap: 12px; margin-bottom: 16px; }
+.avatar {
+  flex: none; width: 27px; height: 27px; border-radius: 50%; background: #e9e9f1; color: #55555f;
+  font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 2px;
+}
+.msg-assistant .avatar { background: #2e2e3a; color: #fff; }
+.msg-body { min-width: 0; flex: 1; }
+.exchange { padding: 2px 10px; margin-bottom: 18px; }
+
+/* reference buttons inside an assistant answer */
+.refjump {
+  display: inline; font: inherit; color: inherit; cursor: pointer;
+  background: rgba(75,59,214,.10); border: 0; border-bottom: 1px solid rgba(75,59,214,.45);
+  border-radius: 3px; padding: 0 3px; margin: 0 1px;
+}
+.refjump:hover { background: rgba(75,59,214,.2); }
+.refjump:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }
+.refjump-arrow { color: var(--acc); font-weight: 700; margin-right: 2px; }

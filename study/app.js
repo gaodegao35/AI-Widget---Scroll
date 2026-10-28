@@ -223,50 +223,110 @@
   /* ===================== content pages ===================== */
 
   // Build the readable page and the list of parts the widget navigates.
+  // Conversations are rendered as a chat application — sidebar, bubbles, composer — because that is
+  // the setting the study is about. The assistant is generic: no product name, logo, or branding.
   function renderContent(data, kind) {
     const parts = [];
     const scroller = el('div', { class: 'page-scroll', tabindex: '0' });
     const inner = el('article', { class: 'page-inner page-' + kind });
 
     if (kind === 'conversation') {
-      inner.append(el('h1', { class: 'page-title', text: data.title }));
       const msgs = data.messages;
       for (let i = 0; i < msgs.length; i += 2) {
         const pair = msgs.slice(i, i + 2);
-        const block = el('div', { class: 'exchange' }, pair.map(m =>
-          el('div', { class: 'msg msg-' + m.role }, [
-            el('span', { class: 'who', text: m.role === 'user' ? 'You' : 'Assistant' }),
-            el('div', { class: 'bubble' }, m.text.split('\n\n').map(t => el('p', { text: t })))
-          ])
-        ));
+        const partIndex = parts.length + 1;
+        const block = el('div', { class: 'exchange' }, pair.map(m => {
+          const bubble = el('div', { class: 'bubble' });
+          m.text.split('\n\n').forEach(t => bubble.append(el('p', {}, renderWithRefs(t, m.refs))));
+          return el('div', { class: 'msg msg-' + m.role }, [
+            el('div', { class: 'avatar', 'aria-hidden': 'true', text: m.role === 'user' ? 'Y' : 'A' }),
+            el('div', { class: 'msg-body' }, [
+              el('span', { class: 'who', text: m.role === 'user' ? 'You' : 'Assistant' }),
+              bubble
+            ])
+          ]);
+        }));
         inner.append(block);
-        parts.push({ id: 'p' + (parts.length + 1), el: block, heading: '', text: pair.map(m => `${m.role === 'user' ? 'Person' : 'Assistant'}: ${m.text}`).join('\n') });
+        parts.push({ id: 'p' + partIndex, el: block, heading: '', text: pair.map(m => `${m.role === 'user' ? 'Person' : 'Assistant'}: ${m.text}`).join('\n') });
       }
     } else {
       inner.append(
         el('h1', { class: 'page-title', text: data.title }),
         data.subtitle ? el('p', { class: 'page-sub', text: data.subtitle }) : null
       );
-      data.sections.forEach((s) => {
+      data.sections.forEach((sec) => {
         const block = el('section', { class: 'docsec' }, [
-          el('h2', { text: s.heading }),
-          ...s.paras.map(t => el('p', { text: t }))
+          el('h2', { text: sec.heading }),
+          ...sec.paras.map(t => el('p', { text: t }))
         ]);
         inner.append(block);
-        parts.push({ id: 'p' + (parts.length + 1), el: block, heading: s.heading, text: s.paras.join('\n\n') });
+        parts.push({ id: 'p' + (parts.length + 1), el: block, heading: sec.heading, text: sec.paras.join('\n\n') });
       });
     }
 
     scroller.append(inner);
-    return { scroller, parts };
+    const wrap = el('div', { class: 'scrollwrap' }, [scroller]);
+
+    let stage;
+    if (kind === 'conversation') {
+      stage = el('div', { class: 'chatapp' }, [
+        el('aside', { class: 'chat-side', 'aria-hidden': 'true' }, [
+          el('div', { class: 'chat-side-head', text: 'Chats' }),
+          el('div', { class: 'chat-conv chat-conv-on', text: data.title }),
+          ...['Recipe ideas', 'Travel plan', 'Reading list', 'Interview prep'].map(t => el('div', { class: 'chat-conv', text: t }))
+        ]),
+        el('div', { class: 'chat-main' }, [
+          el('div', { class: 'chat-head' }, [el('span', { class: 'chat-title', text: data.title })]),
+          wrap,
+          // decorative: the composer shows what kind of page this is. It is inert and unfocusable,
+          // so a participant cannot type into it.
+          el('div', { class: 'chat-composer', 'aria-hidden': 'true' }, [el('span', { text: 'Message the assistant…' })])
+        ])
+      ]);
+    } else {
+      stage = el('div', { class: 'docapp' }, [wrap]);
+    }
+
+    return { stage, wrap, scroller, parts };
+  }
+
+  // Turn authored back-references into buttons that jump to the part they point at.
+  function renderWithRefs(text, refs) {
+    if (!refs || !refs.length) return [text];
+    const hits = refs.map(r => ({ r, i: text.indexOf(r.phrase) })).filter(x => x.i >= 0).sort((a, b) => a.i - b.i);
+    if (!hits.length) return [text];
+    const out = [];
+    let at = 0;
+    hits.forEach(({ r, i }) => {
+      if (i < at) return;
+      if (i > at) out.push(text.slice(at, i));
+      out.push(el('button', {
+        class: 'refjump', type: 'button', 'data-ref-part': String(r.part),
+        title: 'Go to where this was discussed'
+      }, [el('span', { class: 'refjump-arrow', 'aria-hidden': 'true', text: '↑' }), r.phrase]));
+      at = i + r.phrase.length;
+    });
+    if (at < text.length) out.push(text.slice(at));
+    return out;
+  }
+
+  // The widget owns jumping and the back history, so the reference buttons go through it.
+  function wireRefs(root, widget) {
+    root.querySelectorAll('.refjump').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const part = widget.parts[parseInt(btn.dataset.refPart, 10) - 1];
+        if (part) widget.jumpTo(part);
+      });
+    });
   }
 
   /* ---- Phase 1: one page, four untimed tasks ---- */
   function phase1Page(set, kind) {
     return () => {
       const data = CONTENT[set][kind];
-      const { scroller, parts } = renderContent(data, kind);
-      const stage = el('div', { class: 'stage' }, [scroller]);
+      const { stage: inner, scroller, parts } = renderContent(data, kind);
+      const toolbarHost = el('div', { class: 'toolbar-host' });
+      const stage = el('div', { class: 'stage' }, [inner]);
       const tasks = kind === 'conversation' ? T.phase1.conversation : T.phase1.document;
       let i = 0;
 
@@ -284,11 +344,15 @@
       paint();
 
       const wrap = el('div', { class: 'content-screen' }, [
+        toolbarHost,
         stage,
         el('div', { class: 'taskpanel', role: 'region', 'aria-label': 'Current task' }, [taskNum, taskText, el('div', { class: 'taskpanel-actions' }, [nextBtn])])
       ]);
 
-      requestAnimationFrame(() => { STATE.widget = new window.ScrollWidget(scroller, parts, kind); });
+      requestAnimationFrame(() => {
+        STATE.widget = new window.ScrollWidget(scroller, parts, kind, toolbarHost);
+        wireRefs(wrap, STATE.widget);
+      });
       return wrap;
     };
   }
@@ -297,9 +361,11 @@
   function practicePage(cond) {
     return () => {
       const data = CONTENT.PRACTICE.conversation;
-      const { scroller, parts } = renderContent(data, 'conversation');
-      const stage = el('div', { class: 'stage' + (cond === 'CS' ? ' stage-plain' : '') }, [scroller]);
+      const { stage: inner, scroller, parts } = renderContent(data, 'conversation');
+      const toolbarHost = el('div', { class: 'toolbar-host' });
+      const stage = el('div', { class: 'stage' + (cond === 'CS' ? ' stage-plain' : '') }, [inner]);
       const wrap = el('div', { class: 'content-screen' }, [
+        cond === 'IS' ? toolbarHost : null,
         stage,
         el('div', { class: 'taskpanel', role: 'region', 'aria-label': 'Practice' }, [
           el('span', { class: 'task-num', text: 'Practice · about 2 minutes' }),
@@ -309,7 +375,10 @@
           ])
         ])
       ]);
-      if (cond === 'IS') requestAnimationFrame(() => { STATE.widget = new window.ScrollWidget(scroller, parts, 'conversation'); });
+      if (cond === 'IS') requestAnimationFrame(() => {
+        STATE.widget = new window.ScrollWidget(scroller, parts, 'conversation', toolbarHost);
+        wireRefs(wrap, STATE.widget);
+      });
       return wrap;
     };
   }
@@ -326,10 +395,11 @@
         T.phase2Templates.t4
       ];
 
-      const { scroller, parts } = renderContent(data, kind);
-      const stage = el('div', { class: 'stage' + (cond === 'CS' ? ' stage-plain' : '') }, [scroller]);
+      const { stage: inner, wrap: scrollwrap, scroller, parts } = renderContent(data, kind);
+      const toolbarHost = el('div', { class: 'toolbar-host' });
+      const stage = el('div', { class: 'stage' + (cond === 'CS' ? ' stage-plain' : '') }, [inner]);
       const cover = el('div', { class: 'cover' }, [el('span', { text: 'The page is covered until you start.' })]);
-      stage.append(cover);
+      scrollwrap.append(cover);
 
       let i = 0, t0 = 0, elapsed = 0, ticker = null, running = false;
 
@@ -414,6 +484,7 @@
       paint();
 
       const wrap = el('div', { class: 'content-screen' }, [
+        cond === 'IS' ? toolbarHost : null,
         stage,
         el('div', { class: 'taskpanel', role: 'region', 'aria-label': 'Current task' }, [
           el('div', { class: 'taskpanel-head' }, [taskNum, clock]),
@@ -421,7 +492,10 @@
         ])
       ]);
 
-      if (cond === 'IS') requestAnimationFrame(() => { STATE.widget = new window.ScrollWidget(scroller, parts, kind); });
+      if (cond === 'IS') requestAnimationFrame(() => {
+        STATE.widget = new window.ScrollWidget(scroller, parts, kind, toolbarHost);
+        wireRefs(wrap, STATE.widget);
+      });
       return wrap;
     };
   }
