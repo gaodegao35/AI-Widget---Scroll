@@ -95,10 +95,10 @@
   position: absolute; left: 0; right: 0; display: block;
   background: transparent; border: 0; border-radius: 0; padding: 1px 0;
 }
-.isw-tick { display: block; height: 100%; margin: 0 9px 0 13px; border-radius: 3px; background: #c9c9d4; }
-.isw-rail .isw-seg:hover .isw-tick { background: #8f8fa3; }
-.isw-rail .isw-seg.isw-here .isw-tick { background: #9a9ab0; }
-.isw-rail .isw-seg.isw-hit .isw-tick { background: var(--isw-hit); }
+.isw-tick { display: block; height: 100%; margin: 0 9px 0 13px; border-radius: 3px; opacity: .55; }
+.isw-rail .isw-seg:hover .isw-tick, .isw-rail .isw-seg.isw-here .isw-tick { opacity: 1; }
+/* search matches: a dark ring, so they never clash with the content colors */
+.isw-rail .isw-seg.isw-hit .isw-tick { opacity: 1; margin-left: 11px; margin-right: 7px; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--isw-ink); }
 .isw-rail .isw-seg:focus-visible { outline: 2px solid var(--isw-acc); outline-offset: -2px; }
 
 /* the thumb: shows the viewport and can be dragged */
@@ -134,12 +134,16 @@
 }
 .isw-outline .isw-item:hover { background: #efeffa; }
 .isw-outline .isw-item:focus-visible { outline: 2px solid var(--isw-acc); outline-offset: -2px; }
+.isw-dot { flex: none; display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.isw-outline .isw-item .isw-dot { align-self: center; }
+.isw-legend { flex: none; display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 8px 14px 10px; border-top: 1px solid var(--isw-line); font-size: 11.5px; color: var(--isw-dim); }
+.isw-legend-item { display: inline-flex; align-items: center; gap: 5px; }
 .isw-item-num { flex: none; width: 18px; text-align: right; font-size: 11px; color: #9a9aa6; font-variant-numeric: tabular-nums; }
 .isw-item-label { flex: 1; min-width: 0; }
 .isw-outline .isw-item.isw-here { background: #ececf5; border-left-color: #6d6d86; }
 .isw-outline .isw-item.isw-here .isw-item-label { font-weight: 600; }
-.isw-outline .isw-item.isw-hit .isw-item-label { color: var(--isw-hit); font-weight: 600; }
-.isw-outline .isw-item.isw-hit { border-left-color: var(--isw-hit); background: #fff6ea; }
+.isw-outline .isw-item.isw-hit { border-left-color: var(--isw-ink); background: #fff; box-shadow: inset 0 0 0 1.5px var(--isw-ink); }
+.isw-outline .isw-item.isw-hit .isw-item-label { font-weight: 700; }
 .isw-item-wait .isw-item-label { color: #a2a2ad; font-style: italic; }
 
 /* selection offers the phrase to the search box */
@@ -162,8 +166,8 @@
 .isw-pv-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
 .isw-pv-title { font-weight: 700; flex: 1; min-width: 0; }
 .isw-pv-kind {
-  flex: none; font-size: 10.5px; font-weight: 600; letter-spacing: .03em;
-  background: rgba(255,255,255,.16); border-radius: 4px; padding: 1px 6px;
+  flex: none; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+  background: rgba(255,255,255,.12); border-radius: 4px; padding: 1px 7px;
 }
 .isw-pv-text { margin: 0; }
 .isw-pv-loading { color: #c4c4ce; display: flex; align-items: center; }

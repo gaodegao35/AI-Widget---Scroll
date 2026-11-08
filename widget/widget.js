@@ -6,7 +6,8 @@
  *
  * Shape (revised after the first round of user tests):
  *   - A narrow RAIL replaces the native scrollbar. It is a proportional map of the page with a
- *     draggable thumb, so it still behaves like a scrollbar. Ticks are neutral; no colors or badges.
+ *     draggable thumb, so it still behaves like a scrollbar. Each mark's color says what kind of
+ *     content is there (text, picture, code, table); there are no text badges.
  *   - An OUTLINE panel holds the AI labels as a readable list. It opens only when the participant
  *     clicks the toggle at the top of the rail, and closes only with the × in the panel — never on
  *     hover. While it is open, the rail is hidden and the outline takes its place.
@@ -39,8 +40,14 @@
     railWidth: 34
   };
 
-  // Content kind is read from the page itself, never from the AI. It appears only in the preview.
-  const KIND_LABEL = { text: '', image: 'Picture', code: 'Code', table: 'Table' };
+  // Content kind is read from the page itself, never from the AI, so its color cannot be wrong.
+  // Color shows the kind on the rail and in the outline; the word appears only in the preview.
+  const KINDS = {
+    text:  { label: 'Text',    color: '#8fa9dc' },
+    image: { label: 'Picture', color: '#d1467f' },
+    code:  { label: 'Code',    color: '#2e9e5b' },
+    table: { label: 'Table',   color: '#d9a406' }
+  };
   const typeOf = (part) => {
     const n = part.el;
     if (n.querySelector('svg, img, figure')) return 'image';
@@ -170,7 +177,9 @@
             onclick: () => this.setExpanded(false)
           }, '×')
         ]),
-        this.list = el('ol', { class: 'isw-list' })
+        this.list = el('ol', { class: 'isw-list' }),
+        el('div', { class: 'isw-legend', 'aria-hidden': 'true' }, Object.values(KINDS).map(k =>
+          el('span', { class: 'isw-legend-item' }, [el('span', { class: 'isw-dot', style: `background:${k.color}` }), k.label])))
       ]);
       this.outline.style.width = CONFIG.outlineWidth + 'px';
       this.outline.style.right = '0px';   // the outline replaces the rail while it is open
@@ -265,7 +274,7 @@
         seg = el('button', Object.assign({
           class: 'isw-seg', type: 'button',
           'aria-label': p.label ? `Go to: ${p.label}` : `Go to part ${i + 1}`
-        }, handlers(p, () => seg)), [el('span', { class: 'isw-tick', 'aria-hidden': 'true' })]);
+        }, handlers(p, () => seg)), [el('span', { class: 'isw-tick', style: `background:${KINDS[p.type].color}`, 'aria-hidden': 'true' })]);
         seg._part = p;
         this.segs.append(seg);
         return seg;
@@ -275,6 +284,7 @@
         let item;
         item = el('button', Object.assign({ class: 'isw-item' + (p.label ? '' : ' isw-item-wait'), type: 'button' }, handlers(p, () => item)), [
           el('span', { class: 'isw-item-num', text: String(i + 1) }),
+          el('span', { class: 'isw-dot', style: `background:${KINDS[p.type].color}`, title: KINDS[p.type].label }),
           el('span', { class: 'isw-item-label', text: p.label || 'Loading label…' })
         ]);
         item._part = p;
@@ -431,12 +441,12 @@
       clearTimeout(this.hideTimer);
       const i = this.parts.indexOf(part);
       const prev = i > 0 ? this.parts[i - 1] : null;
-      const kindLabel = KIND_LABEL[part.type];
+      const kind = KINDS[part.type];
 
       const body = [
         el('div', { class: 'isw-pv-head' }, [
           el('span', { class: 'isw-pv-title', text: part.label || part.heading || `Part ${i + 1}` }),
-          kindLabel ? el('span', { class: 'isw-pv-kind', text: kindLabel }) : null
+          el('span', { class: 'isw-pv-kind' }, [el('span', { class: 'isw-dot', style: `background:${kind.color}` }), kind.label])
         ])
       ];
       if (data.loading) {

@@ -18,10 +18,18 @@ Static pages plus one serverless function. No build step, no framework, no datab
 | Search box, words or a whole question | yes | when the participant submits (`search`) | right side of the page's title bar |
 | Back ("Previous spot") | no | never | right side of the page's title bar |
 
-The **rail** replaces the native scrollbar: a proportional map of the page with neutral marks and a
-draggable thumb. There are no colors or content-type badges on the rail or in the outline; whether a
-part holds a picture, code or a table is shown only in its preview (read from the page, never from
-the AI). Search matches turn amber on the rail and in the outline.
+The **rail** replaces the native scrollbar (which is hidden): a proportional map of the page with a
+draggable thumb. Each mark's **color** says what kind of content is there, read from the page and
+never from the AI. The outline shows the same color as a small dot before each label, with a legend
+at its foot. There are no text badges on the rail or in the outline; the kind's name appears only in
+the preview. Search matches get a dark ring on the rail and a dark outline in the list.
+
+| Color | Content |
+|---|---|
+| soft blue | text |
+| magenta | a picture or chart |
+| green | code or data |
+| amber | a table |
 
 The **preview** shows the label, one sentence (at most 20 words) on what the part says, what comes
 just before it, and — when a search is active — whether the part matches that search. The search
