@@ -11,23 +11,25 @@ Static pages plus one serverless function. No build step, no framework, no datab
 
 **Intelligent Scrolling** — exactly the four features the protocol allows, and no others:
 
-| Feature | AI? | When it calls Claude |
-|---|---|---|
-| Colored labeled markers beside the scrollbar | yes | once, when a page loads (`labels`) |
-| Hover preview of a part | yes | each time the participant hovers a marker (`preview`) |
-| Search box, keywords or a sentence | yes | when the participant submits (`search`) |
-| Back button to the previous scroll position | no | never |
+| Feature | AI? | When it calls Claude | Where it is |
+|---|---|---|---|
+| Labeled markers | yes | once, when a page loads (`labels`) | an **outline** panel, opened and closed only by clicking the list icon at the top of the rail |
+| Hover preview of a part | yes | each hover on a rail mark or outline item (`preview`) | dark card beside the pointer |
+| Search box, words or a whole question | yes | when the participant submits (`search`) | right side of the page's title bar |
+| Back ("Previous spot") | no | never | right side of the page's title bar |
 
-Marker colour says what **kind** of content sits at that position. It is read from the content
-itself, never generated, so it cannot be wrong; Claude writes only the label text beside it.
+The **rail** replaces the native scrollbar: a proportional map of the page with neutral marks and a
+draggable thumb. There are no colors or content-type badges on the rail or in the outline; whether a
+part holds a picture, code or a table is shown only in its preview (read from the page, never from
+the AI). Search matches turn amber on the rail and in the outline.
 
-| Colour | Content | Badge |
-|---|---|---|
-| blue | prose | — |
-| magenta | a picture or figure | `IMG` |
-| green | a code or data block | `CODE` |
-| amber | a table | `TABLE` |
-| dark amber, ringed | a search hit (overrides the colour above) | — |
+The **preview** shows the label, one sentence (at most 20 words) on what the part says, what comes
+just before it, and — when a search is active — whether the part matches that search. The search
+text is the only participant input the preview sends.
+
+**Previous spot** saves a position when the participant stays on it for 5 seconds and then moves
+away, or jumps away from it with the outline, the rail or a search result. Arriving by a jump also
+counts as a stop. Tunable in `CONFIG` at the top of `widget/widget.js` (`dwellMs`, `leaveFraction`).
 
 No keyboard shortcut is bound anywhere in the app, so the browser's own find (Ctrl/Cmd+F) is never
 intercepted.
@@ -38,8 +40,8 @@ The researcher reads every task aloud from the session script (kept outside this
 The website shows only context, the two long pages, and a button to move on — no setup screen, no
 session number, no task panel, no on-screen timer, no questionnaires.
 
-Flow: welcome (context for both pages) → page 1 intro → **conversation** → page 2 intro →
-**article** → end screen. **Both pages always have the AI scrolling tool.**
+Flow: one-page introduction (the study, what they will do, the context of both pages) →
+**conversation** → **article** → end screen. **Both pages always have the AI scrolling tool.**
 
 ```
 /                 start of the session (send this link)

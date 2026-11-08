@@ -4,7 +4,7 @@
  * The researcher reads every task aloud from the session script. The website only shows context,
  * the two long pages, and a button to move on. Flow:
  *
- *   welcome / context → page 1 intro → conversation → page 2 intro → article → end
+ *   introduction (one page) → conversation → article → end
  *
  * Both pages always show the AI scrolling tool. ?page=chat or ?page=doc jumps straight to a page.
  *
@@ -58,28 +58,18 @@
 
   /* ===================== participant screens ===================== */
 
+  // One-page introduction. Clicking Start opens the conversation and the testing begins.
   const welcomeScreen = () => panel([
+    el('p', { class: 'eyebrow', text: P.welcome.eyebrow }),
     el('h1', { text: P.welcome.title }),
     el('p', { class: 'lede', text: P.welcome.lede }),
-    el('div', { class: 'context-list' }, P.welcome.pages.map(pg => el('div', { class: 'context-item' }, [
-      el('h2', { text: pg.label }),
-      el('p', { text: pg.text })
-    ]))),
+    ...P.welcome.blocks.map(b => el('div', { class: 'intro-block' }, [
+      el('h2', { text: b.heading }),
+      ...b.paras.map(t => el('p', { text: t }))
+    ])),
     el('p', { class: 'fineprint', text: P.welcome.note }),
-    el('div', { class: 'actions' }, [primary('Continue', next)])
+    el('div', { class: 'actions' }, [primary(P.welcome.start, next)])
   ], true);
-
-  const introScreen = (page) => () => {
-    const w = P[page];
-    return panel([
-      el('p', { class: 'eyebrow', text: w.eyebrow }),
-      el('h1', { text: w.title }),
-      el('p', { class: 'body', text: w.text }),
-      el('p', { class: 'tool-line tool-ai', text: P.tool }),
-      el('p', { class: 'fineprint', text: 'Wait for your researcher to tell you when to open it.' }),
-      el('div', { class: 'actions' }, [primary(w.open, next)])
-    ]);
-  };
 
   const endScreen = () => panel([
     el('h1', { text: P.end.title }),
@@ -201,6 +191,8 @@
 
     scroller.append(inner);
     const wrap = el('div', { class: 'scrollwrap' }, [scroller]);
+    // Back and search sit on the right of this page's own title bar.
+    const tools = el('div', { class: 'head-tools' });
 
     let stage;
     if (kind === 'conversation') {
@@ -212,7 +204,7 @@
           ...(data.sidebar || []).map(t => el('div', { class: 'chat-conv', text: t }))
         ]),
         el('div', { class: 'chat-main' }, [
-          el('div', { class: 'chat-head' }, [el('span', { class: 'chat-title', text: data.title })]),
+          el('div', { class: 'chat-head' }, [el('span', { class: 'chat-title', text: data.title }), tools]),
           wrap,
           // decorative: inert and unfocusable, so a participant cannot type into it.
           el('div', { class: 'chat-composer', 'aria-hidden': 'true' }, [el('span', { text: 'Message the assistant…' })])
@@ -220,32 +212,34 @@
       ]);
     } else {
       stage = el('div', { class: 'docapp' }, [
-        el('div', { class: 'doc-head', 'aria-hidden': 'true' }, [el('span', { class: 'doc-site', text: 'The Long Read' }), el('span', { class: 'doc-section', text: 'Cities · Climate' })]),
+        el('div', { class: 'doc-head' }, [
+          el('span', { class: 'doc-site', text: 'The Long Read' }),
+          el('span', { class: 'doc-section', text: 'Cities · Climate' }),
+          tools
+        ]),
         wrap
       ]);
     }
-    return { stage, scroller, parts };
+    return { stage, scroller, parts, tools };
   }
 
   // One content page, with the AI scrolling tool in place of the native scrollbar.
   function contentPage(page, isLast) {
     return () => {
       const kind = page === 'chat' ? 'conversation' : 'document';
-      const { stage: inner, scroller, parts } = renderContent(CONTENT[page], kind);
-      const toolbarHost = el('div', { class: 'toolbar-host' });
+      const { stage: inner, scroller, parts, tools } = renderContent(CONTENT[page], kind);
       const stage = el('div', { class: 'stage' }, [inner]);
 
       const wrap = el('div', { class: 'content-screen' }, [
-        toolbarHost,
         stage,
         el('div', { class: 'studybar' }, [
           el('span', { class: 'studybar-where', text: P[page].eyebrow + ' · ' + P[page].title }),
-          el('button', { class: 'btn btn-sm', type: 'button', onclick: next }, isLast ? 'I\'m finished →' : 'Go to page 2 →')
+          el('button', { class: 'btn btn-sm', type: 'button', onclick: next }, isLast ? 'I\'m finished →' : 'Go to page 2: the article →')
         ])
       ]);
 
       requestAnimationFrame(() => {
-        STATE.widget = new window.ScrollWidget(scroller, parts, kind, toolbarHost);
+        STATE.widget = new window.ScrollWidget(scroller, parts, kind, tools);
       });
       return wrap;
     };
@@ -255,14 +249,14 @@
 
   STATE.screens = [
     welcomeScreen,
-    introScreen('chat'), contentPage('chat', false),
-    introScreen('doc'), contentPage('doc', true),
+    contentPage('chat', false),
+    contentPage('doc', true),
     endScreen
   ];
 
   // ?page=chat or ?page=doc jumps straight to that page — handy for rehearsing.
   const jump = new URLSearchParams(location.search).get('page');
-  show(jump === 'chat' ? 2 : jump === 'doc' ? 4 : 0);
+  show(jump === 'chat' ? 1 : jump === 'doc' ? 2 : 0);
 
   // exposed for checks only; holds no participant data
   window.STUDY_APP = { STATE };

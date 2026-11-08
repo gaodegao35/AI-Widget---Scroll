@@ -12,19 +12,20 @@ const MODEL = 'claude-opus-5';
 const MAX_PROMPT = 120_000;
 
 const PROMPTS = {
-  // Feature 1: colored labeled markers, generated when a page loads.
-  labels: (p) => `Below are the numbered parts of a ${p.kind === 'conversation' ? 'conversation between a person and an AI assistant' : 'document'}.
+  // Feature 1: labeled markers, generated when a page loads. Shown as a list beside the page, like a
+  // table of contents, so each label must be easy to scan and say what a reader would find there.
+  labels: (p) => `Below are the numbered parts of a ${p.kind === 'conversation' ? 'conversation between a person and an AI assistant' : 'long article'}.
 
-For each part, write a label a reader can use to decide whether to scroll there.
+A reader will see your labels as a list beside the page, like a table of contents, and will pick one to jump to the thing they are looking for.
+
+For each part, write one label.
 
 Rules:
-- 2 to 5 words. No trailing punctuation.
-- Name the specific subject of that part: "insurance for power tools", not "a discussion" or "more details".
-- Every label must be distinguishable from the others. If two parts are similar, say what makes them different.
-- Use the words of the content, not meta-description. Never begin with "the part where" or "discussion of".
-
-- If the part contains a picture, a code block, or a table, say what that thing is about rather than
-  naming it: "red bicycle logo", not "an image".
+- 3 to 7 words. Sentence case. No trailing punctuation. Plain, everyday words.
+- Name the specific thing a reader would find there: "Color palette for the dark theme", not "Visual design discussion".
+- If a part begins with [Picture: ...], [Code block ...] or [Table ...], name that thing in the label with a plain noun: "Bar chart of usability test times", "React code for the battery gauge", "Table of touch target sizes".
+- ${p.kind === 'conversation' ? 'Describe the topic of the exchange, not who said what. Never start with "User", "Person", "Assistant", "Question about", or "Discussion of".' : 'Do not just copy the section heading; say what the section actually gives the reader.'}
+- Every label must be clearly different from the others. If two parts are about similar things, say what makes each one different.
 
 Return ONLY a JSON array, one entry per part, in order:
 [{"id": "...", "label": "..."}]
@@ -32,21 +33,26 @@ Return ONLY a JSON array, one entry per part, in order:
 Parts:
 ${JSON.stringify(p.sections)}`,
 
-  // Feature 2: hover preview, generated when the participant hovers a marker.
-  preview: (p) => `A reader is hovering over one part of a long ${p.kind === 'conversation' ? 'conversation' : 'document'} and is deciding whether to scroll to it.
+  // Feature 2: hover preview, generated when the participant hovers a marker. It must be quicker to
+  // read than the part itself, and it says whether the part matches the reader's search, if any.
+  preview: (p) => `A reader is hovering over one part of a long ${p.kind === 'conversation' ? 'conversation' : 'article'} to decide, in about two seconds, whether to go there.
 
-Write a preview of that part. Be concrete: name the specific things it says. Do not describe it from the outside ("this section covers..."); say what it actually states.
+Write "here": one sentence saying what this part tells the reader.
+- At most 20 words, and always much shorter than the part itself.
+- State the specific content: names, numbers, decisions, advice. Never describe it from outside ("This section discusses", "The assistant explains", "This part covers").
+- If the part holds a picture, code, or a table, say what it shows.
+${p.query
+  ? `The reader searched this page for: "${p.query}"
+Write "match": does this part contain what they searched for? Start with "Yes", "Partly", or "No", then a dash and at most 12 words saying what is or isn't there.`
+  : 'Set "match" to null.'}
 
-Return ONLY JSON:
-{"summary": "one or two sentences, under 45 words", "points": ["short phrase", "short phrase", "short phrase"]}
-
-"points" holds 2 to 4 very short noun phrases naming the distinct things in this part, in the order they appear. No sentences.
+Return ONLY JSON: {"here": "...", "match": ${p.query ? '"..."' : 'null'}}
 
 The part${p.heading ? ` is headed "${p.heading}" and` : ''} reads:
 ${p.text}`,
 
   // Feature 3: search box, sent when the participant submits a search.
-  search: (p) => `A reader of a long ${p.kind === 'conversation' ? 'conversation' : 'document'} is looking for: "${p.query}"
+  search: (p) => `A reader of a long ${p.kind === 'conversation' ? 'conversation' : 'article'} is looking for: "${p.query}"
 
 Rank the numbered parts below by how well each answers what the reader means. Paraphrases count; shared words are not required. Omit parts that do not match.
 
