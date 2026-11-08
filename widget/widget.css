@@ -12,7 +12,7 @@
 }
 .isw-tools *, .isw-rail *, .isw-outline *, .isw-preview * { box-sizing: border-box; }
 .isw-tools button, .isw-rail button, .isw-outline button { font: inherit; color: inherit; cursor: pointer; }
-.isw-tools [hidden], .isw-rail [hidden], .isw-outline[hidden], .isw-preview[hidden], .isw-selpop[hidden] { display: none !important; }
+.isw-tools [hidden], .isw-rail [hidden], .isw-rail[hidden], .isw-outline[hidden], .isw-preview[hidden], .isw-selpop[hidden] { display: none !important; }
 
 /* ---------- title bar tools: status · back · search ---------- */
 .isw-tools { display: flex; align-items: center; gap: 8px; min-width: 0; }

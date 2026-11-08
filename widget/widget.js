@@ -7,8 +7,9 @@
  * Shape (revised after the first round of user tests):
  *   - A narrow RAIL replaces the native scrollbar. It is a proportional map of the page with a
  *     draggable thumb, so it still behaves like a scrollbar. Ticks are neutral; no colors or badges.
- *   - An OUTLINE panel holds the AI labels as a readable list. It opens and closes only when the
- *     participant clicks the toggle at the top of the rail (or the × in the panel) — never on hover.
+ *   - An OUTLINE panel holds the AI labels as a readable list. It opens only when the participant
+ *     clicks the toggle at the top of the rail, and closes only with the × in the panel — never on
+ *     hover. While it is open, the rail is hidden and the outline takes its place.
  *   - Hovering a tick or an outline item shows a short preview: one line on what is there, what
  *     kind of content it holds, what comes just before, and — if a search is active — whether it
  *     matches the search.
@@ -161,7 +162,7 @@
             el('div', { class: 'isw-outline-title', text: this.kind === 'conversation' ? 'Outline of this chat' : 'Outline of this article' }),
             this.outlineSub = el('div', { class: 'isw-outline-sub', text: 'Labels written by AI' })
           ]),
-          el('button', {
+          this.closeBtn = el('button', {
             class: 'isw-close', type: 'button', title: 'Close the outline', 'aria-label': 'Close the outline',
             onclick: () => this.setExpanded(false)
           }, '×')
@@ -169,7 +170,7 @@
         this.list = el('ol', { class: 'isw-list' })
       ]);
       this.outline.style.width = CONFIG.outlineWidth + 'px';
-      this.outline.style.right = CONFIG.railWidth + 'px';
+      this.outline.style.right = '0px';   // the outline replaces the rail while it is open
       this.outline.addEventListener('mouseenter', () => { this.overOutline = true; });
       this.outline.addEventListener('mouseleave', () => { this.overOutline = false; });
       this.wrap.append(this.outline);
@@ -178,17 +179,20 @@
     setExpanded(open) {
       this.expanded = open;
       this.outline.hidden = !open;
+      this.rail.hidden = open;      // the thin bar of marks goes away while the outline is open
       this.toggleBtn.setAttribute('aria-expanded', String(open));
       this.toggleBtn.classList.toggle('isw-toggle-on', open);
       const t = open ? 'Hide the outline' : 'Show the outline';
       this.toggleBtn.title = t; this.toggleBtn.setAttribute('aria-label', t);
       // Narrow the page instead of covering it, keeping the reading position steady.
       const anchor = this.scroller.scrollTop / Math.max(1, this.scroller.scrollHeight);
-      this.scroller.style.right = open ? (CONFIG.railWidth + CONFIG.outlineWidth) + 'px' : '';
+      this.scroller.style.right = open ? CONFIG.outlineWidth + 'px' : '';
       this.suppress = true;
       this.scroller.scrollTop = anchor * this.scroller.scrollHeight;
       requestAnimationFrame(() => { this.suppress = false; this.layout(); this.revealCurrent(true); });
       this.hidePreview();
+      // keep keyboard focus on a visible control
+      (open ? this.closeBtn : this.toggleBtn).focus({ preventScroll: true });
     }
 
     /* ---------- page listeners ---------- */

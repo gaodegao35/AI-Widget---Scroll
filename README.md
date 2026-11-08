@@ -13,7 +13,7 @@ Static pages plus one serverless function. No build step, no framework, no datab
 
 | Feature | AI? | When it calls Claude | Where it is |
 |---|---|---|---|
-| Labeled markers | yes | once, when a page loads (`labels`) | an **outline** panel, opened and closed only by clicking the list icon at the top of the rail |
+| Labeled markers | yes | once, when a page loads (`labels`) | an **outline** panel, opened by clicking the list icon at the top of the rail and closed with its ×; while it is open the rail is hidden |
 | Hover preview of a part | yes | each hover on a rail mark or outline item (`preview`) | dark card beside the pointer |
 | Search box, words or a whole question | yes | when the participant submits (`search`) | right side of the page's title bar |
 | Back ("Previous spot") | no | never | right side of the page's title bar |
