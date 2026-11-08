@@ -283,7 +283,7 @@
     async loadLabels() {
       this.setStatus('Reading the page…', 'busy');
       try {
-        const sections = this.parts.map(p => ({ id: p.id, text: (p.heading ? p.heading + '. ' : '') + p.text.slice(0, 900) }));
+        const sections = this.parts.map(p => ({ id: p.id, text: (p.heading ? p.heading + '. ' : '') + p.text.slice(0, 1150) }));
         const out = await askClaude('labels', { kind: this.kind, sections });
         const byId = new Map((Array.isArray(out) ? out : []).map(r => [String(r.id), r]));
         this.parts.forEach(p => {
@@ -364,7 +364,7 @@
       this.searchBtn.disabled = true;
       this.setStatus('Searching…', 'busy');
       try {
-        const sections = this.parts.map(p => ({ id: p.id, text: (p.heading ? p.heading + '. ' : '') + p.text.slice(0, 900) }));
+        const sections = this.parts.map(p => ({ id: p.id, text: (p.heading ? p.heading + '. ' : '') + p.text.slice(0, 1150) }));
         const out = await askClaude('search', { kind: this.kind, query: q, sections });
         const list = (Array.isArray(out) ? out : []).slice(0, CONFIG.maxResults);
         this.showResults(list.map(r => ({ part: this.parts.find(p => p.id === String(r.id)), why: String(r.why || '') })).filter(x => x.part));

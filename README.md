@@ -33,24 +33,27 @@ itself, never generated, so it cannot be wrong; Claude writes only the label tex
 scrollbar, and zero calls to the API. No keyboard shortcut is bound anywhere in the app, so the
 browser's own find (Ctrl/Cmd+F) is never intercepted in either condition.
 
-## Running a session
+## Running a session (moderated)
 
-Open the site. The researcher setup screen asks for the phase and session number, shows the computed
-order, and starts the session. Or send a ready-made link: `?phase=2&s=7` (no personal information in
-the URL). Everything after that is in one page — no pop-ups, no new tabs, no dialogs.
+The researcher reads every task aloud from the session script (kept outside this repo, as a doc).
+The website shows only context, the two long pages, and a button to move on — no task panel, no
+on-screen timer, no questionnaires.
 
-- **Phase 1** · checklist → introduction → first content page (4 tasks) → second content page
-  (4 tasks) → 8 feedback questions → end. Odd session numbers start on the conversation, even on the
-  document. Both pages use Set A with the AI tool on.
-- **Phase 2** · checklist → introduction → [practice → conversation (4 timed tasks) → document
-  (4 timed tasks) → SUS] → break → [the same for the other condition] → 5 interview questions → end.
-  Order = ((session − 1) mod 4) + 1, per the table in the spec.
+Flow: researcher setup → welcome (context for both pages) → page 1 intro → **conversation** →
+page 2 intro → **article** → end screen.
 
-Timed tasks: the content is covered until **Start**; the timer counts up in mm:ss and is visible on
-screen for the recording; **Found it / Done** pauses it and offers **Continue** (if the researcher
-says it is not right) and **Next task**; at 2:00 it stops and shows "Time's up, let's move on."
-Task 1 returns the page to the top; Tasks 2–4 do not, so Task 4 starts wherever Task 3 ended.
-Times are shown and then discarded — nothing is kept.
+Each page is shown with the AI tool (`ai`) or a regular scrollbar (`regular`). The page order is
+fixed (conversation first). Default by session number: odd sessions get the AI tool on the
+conversation, even sessions on the article.
+
+```
+/?s=1                         odd session: chat=ai, doc=regular
+/?s=2                         even session: chat=regular, doc=ai
+/?s=3&chat=ai&doc=ai          override either page by hand
+/?s=1&page=doc                jump straight to a page, for rehearsing
+```
+
+The setup screen (no parameters) builds these links. They hold no personal information.
 
 ## What is never stored or sent
 
@@ -76,36 +79,29 @@ Locally, `vercel dev` gives the same thing including the function.
 
 | File | Holds |
 |---|---|
-| `study/content-a.js` | Set A: a 30-message conversation and a 13-section document |
-| `study/content-b.js` | Set B: matched in length and structure (30 messages, 13 sections) |
-| `study/content-practice.js` | the short practice conversation, unrelated to A and B |
-| `study/tasks.js` | the task sheet, all protocol wording, SUS, feedback and interview questions |
+| `study/content-chat.js` | Page 1: a 60-message (30-exchange) chat about redesigning a Tesla Model 3 dashboard for a course project, with 5 pictures, 4 code blocks and 8 tables |
+| `study/content-doc.js` | Page 2: a 28-section fictional long-form article about a city cooling its neighborhoods, with 4 figures, 2 code/data blocks and 6 tables |
+| `study/pages.js` | all participant-facing wording: welcome, page intros, end screen |
 
-All of it is fictional and researcher-written. The simulated chatbot page carries no product name or
-branding; the two speakers are labelled "You" and "Assistant".
+All of it is fictional and researcher-written. The simulated chat page carries no product name or
+branding; the two speakers are labelled "You" and "Assistant". Messages support blank-line
+paragraphs, `- ` and `1. ` lists, `**bold**` and `` `code` ``.
+
+Each part sent to the AI starts with a one-line description of any picture, code block or table it
+holds (its caption, language and first lines, or column names), so labels and search can name the
+artifact rather than only the prose around it. This is still only study content.
 
 ## Decisions for the PI
 
-1. **Task sheet.** `study/tasks.js` carries *draft* targets and questions, placed so Target 1 falls in
-   the middle third of each page and Target 2 in the last third. Each entry has a `target1Locator` /
-   `target2Locator` phrase for checking placement, and an `answer` field for Task 3 that is never
-   rendered to the participant. Please confirm or replace all four rows before the first session.
-2. **Preview caching.** `widget/widget.js` → `CONFIG.cachePreviews` is **false**, so a preview is
-   generated on every hover, exactly as the protocol describes. Setting it to true reuses a preview
-   within a page. It would not change what is sent to the AI, but it differs from the protocol
-   wording, so it is off until you decide.
-3. **Phase 1 content.** Phase 1 currently reuses Set A, which the spec permits. Say if you want
-   separate Phase 1 pages.
-4. **A fifth feature.** The reference buttons inside an assistant's closing summary — phrases that
-   jump to the exchange they refer to — are arguably a feature beyond the four the protocol lists.
-   Select-to-search is defensible as an input route into the existing search box, but the jump
-   buttons are not. Either remove them before sessions or file a modification. They are confined to
-   `renderWithRefs` / `wireRefs` in `study/app.js` and the authored `refs` arrays in the content.
-5. **Failed-label fallback.** If the `labels` call fails, a marker falls back to its own section
-   heading (documents) or "Part N" (conversations), and a **Try again** button appears. This is not
-   AI output and adds no information that is not already on the page; it exists so one failed request
-   does not make the rail useless for the rest of a task. Flagging it in case you would rather the
-   markers stay blank.
+1. **IRB fit.** The moderated format, the new pages, the pre-test interview and the per-page ease
+   rating differ from the approved protocol (Phase 1 / Phase 2, timed on-screen tasks, SUS). Check
+   whether a modification is needed before the first participant. The four features and the data
+   rules are unchanged.
+2. **Preview caching.** `widget/widget.js` → `CONFIG.cachePreviews` is still **false**.
+3. **Reference jump buttons** are removed (no `refs` in the new content, no code for them), which
+   settles the earlier "fifth feature" question.
+4. **Failed-label fallback** is unchanged: on failure a marker shows its section heading or "Part N"
+   plus a **Try again** button.
 
 ## Acceptance checklist
 
@@ -113,19 +109,20 @@ branding; the two speakers are labelled "You" and "Assistant".
 - [x] Refreshing any page clears all typed text and selections
 - [x] Anthropic calls only from the server, only in the IS condition, carrying only content and search text
 - [x] CS condition makes zero AI calls and leaves Ctrl/Cmd+F working
-- [x] The setup screen gives the correct order for session numbers 1–8
-- [x] Phase 2 timer is visible, stops at 2:00, and Task 4 does not reset scroll
-- [x] All task, question, and SUS wording matches Sections 6–9 of the spec exactly
+- [x] Odd sessions default to AI on the conversation, even sessions to AI on the article
+- [x] Regular pages make zero calls to `/api/claude` (checked with a request log)
+- [ ] Labels, preview and search checked against the real API on the new, longer pages
 - [ ] Checked in current Chrome, Edge, Firefox, and Safari on a laptop *(verified in Chrome so far)*
 
 ## Layout
 
 ```
 index.html              the whole app shell
-study/app.js            flow: screens, task panel, timer, order computation
+study/app.js            flow: setup, context screens, the two pages
 study/study.css         shell styling
-study/content-*.js      fictional content
-study/tasks.js          task sheet and protocol wording
+study/content-chat.js   page 1, the conversation
+study/content-doc.js    page 2, the article
+study/pages.js          participant-facing wording
 widget/widget.js        the four features
 widget/widget.css       widget styling
 api/claude.js           server-side Claude proxy; the only place the key is read
