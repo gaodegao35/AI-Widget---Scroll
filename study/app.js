@@ -4,18 +4,16 @@
  * The researcher reads every task aloud from the session script. The website only shows context,
  * the two long pages, and a button to move on. Flow:
  *
- *   [researcher setup] → welcome / context → page 1 intro → conversation → page 2 intro → article → end
+ *   welcome / context → page 1 intro → conversation → page 2 intro → article → end
  *
- * Each page is shown either with the AI scrolling tool ("ai") or with a regular scrollbar
- * ("regular"), chosen per page on the setup screen or in the link: ?s=3, or ?chat=ai&doc=regular.
+ * Both pages always show the AI scrolling tool. ?page=chat or ?page=doc jumps straight to a page.
  *
  * IRB constraints respected here:
  *   - Nothing is stored. No localStorage/sessionStorage/IndexedDB/cookies, no database.
  *   - No analytics or interaction logging of any kind.
- *   - No name, email, or personal field anywhere. The session number only picks the default
- *     condition and is never sent anywhere.
- *   - The only network call is the widget's POST /api/claude, on "ai" pages only, carrying study
- *     content and the participant's typed search text.
+ *   - No name, email, session code, or personal field anywhere.
+ *   - The only network call is the widget's POST /api/claude, carrying study content and the
+ *     participant's typed search text.
  *   - All state lives in the STATE object below, so a refresh clears everything.
  *   - No window.alert/confirm/prompt, no pop-ups, no new tabs, no keyboard shortcuts.
  */
@@ -26,7 +24,7 @@
   const CONTENT = window.STUDY_CONTENT;
 
   // ---- in-memory state only ----
-  const STATE = { session: null, cond: null, screens: [], at: 0, widget: null };
+  const STATE = { screens: [], at: 0, widget: null };
 
   const app = document.getElementById('app');
   const el = (tag, attrs = {}, kids = []) => {
@@ -39,19 +37,6 @@
     }
     for (const c of [].concat(kids)) if (c != null && c !== false) n.append(c.nodeType ? c : document.createTextNode(String(c)));
     return n;
-  };
-
-  /* ===================== conditions ===================== */
-
-  // Default counterbalancing: odd sessions get the AI tool on the conversation, even sessions on
-  // the article. The page order itself is fixed: conversation first, article second.
-  function defaultCond(session) {
-    return session % 2 === 1 ? { chat: 'ai', doc: 'regular' } : { chat: 'regular', doc: 'ai' };
-  }
-  const condName = (c) => (c === 'ai' ? 'AI scrolling tool' : 'Regular scrollbar');
-  const linkFor = (session, cond) => {
-    const q = new URLSearchParams({ s: String(session), chat: cond.chat, doc: cond.doc });
-    return location.origin + location.pathname + '?' + q.toString();
   };
 
   /* ===================== screen plumbing ===================== */
@@ -70,72 +55,6 @@
 
   const panel = (kids, wide) => el('div', { class: 'screen' }, [el('div', { class: 'card' + (wide ? ' card-wide' : '') }, kids)]);
   const primary = (label, onclick) => el('button', { class: 'btn btn-primary', type: 'button', onclick }, label);
-
-  /* ===================== researcher setup ===================== */
-
-  function setupScreen() {
-    let session = 1;
-    let cond = defaultCond(1);
-    let touched = false; // once the researcher picks a condition by hand, the session number stops overriding it
-
-    const summary = el('div', { class: 'order-summary' });
-    const radios = {};
-
-    const render = () => {
-      for (const page of ['chat', 'doc']) for (const c of ['ai', 'regular']) radios[page + c].checked = cond[page] === c;
-      const link = linkFor(session, cond);
-      summary.textContent = '';
-      summary.append(
-        el('div', { class: 'order-line' }, [el('b', { text: 'Session ' + session }), touched ? ' · conditions set by hand' : ` · default for an ${session % 2 ? 'odd' : 'even'} session`]),
-        el('ol', { class: 'order-list' }, [
-          el('li', { text: `Page 1, conversation — ${condName(cond.chat)}` }),
-          el('li', { text: `Page 2, article — ${condName(cond.doc)}` })
-        ]),
-        el('div', { class: 'order-link' }, [
-          el('span', { class: 'field-label', text: 'Link to send the participant' }),
-          el('code', { class: 'linkbox', text: link })
-        ])
-      );
-    };
-
-    const sessionInput = el('input', {
-      class: 'field', type: 'number', min: '1', step: '1', value: '1', id: 'session-number',
-      oninput: (e) => {
-        session = Math.max(1, parseInt(e.target.value, 10) || 1);
-        if (!touched) cond = defaultCond(session);
-        render();
-      }
-    });
-
-    const pageChoice = (page, label) => el('div', {}, [
-      el('span', { class: 'field-label', text: label }),
-      el('div', { class: 'radio-row' }, ['ai', 'regular'].map(c => el('label', { class: 'radio' }, [
-        radios[page + c] = el('input', {
-          type: 'radio', name: 'cond-' + page, value: c,
-          onchange: () => { cond = Object.assign({}, cond, { [page]: c }); touched = true; render(); }
-        }),
-        el('span', { text: condName(c) })
-      ])))
-    ]);
-
-    const node = panel([
-      el('p', { class: 'eyebrow', text: 'Researcher setup' }),
-      el('h1', { text: 'Intelligent Scrolling study' }),
-      el('p', { class: 'lede', text: 'Pick the session number and the scrollbar for each page, then send the link below or start here. Nothing on this screen is stored.' }),
-      el('div', { class: 'field-row' }, [
-        el('div', {}, [el('label', { class: 'field-label', for: 'session-number', text: 'Session number' }), sessionInput])
-      ]),
-      el('div', { class: 'field-row' }, [
-        pageChoice('chat', 'Page 1 · conversation'),
-        pageChoice('doc', 'Page 2 · article')
-      ]),
-      summary,
-      el('div', { class: 'actions' }, [primary('Start session', () => startSession(session, cond))]),
-      el('p', { class: 'fineprint', text: 'The link holds only the session number and the two conditions — no personal information.' })
-    ]);
-    render();
-    return node;
-  }
 
   /* ===================== participant screens ===================== */
 
@@ -156,7 +75,7 @@
       el('p', { class: 'eyebrow', text: w.eyebrow }),
       el('h1', { text: w.title }),
       el('p', { class: 'body', text: w.text }),
-      el('p', { class: 'tool-line tool-' + STATE.cond[page], text: P.tool[STATE.cond[page]] }),
+      el('p', { class: 'tool-line tool-ai', text: P.tool }),
       el('p', { class: 'fineprint', text: 'Wait for your researcher to tell you when to open it.' }),
       el('div', { class: 'actions' }, [primary(w.open, next)])
     ]);
@@ -308,18 +227,16 @@
     return { stage, scroller, parts };
   }
 
-  // One content page. On "ai" pages the widget replaces the native scrollbar; on "regular" pages
-  // nothing extra is loaded and no AI call is made.
+  // One content page, with the AI scrolling tool in place of the native scrollbar.
   function contentPage(page, isLast) {
     return () => {
       const kind = page === 'chat' ? 'conversation' : 'document';
-      const mode = STATE.cond[page];
       const { stage: inner, scroller, parts } = renderContent(CONTENT[page], kind);
       const toolbarHost = el('div', { class: 'toolbar-host' });
-      const stage = el('div', { class: 'stage' + (mode === 'regular' ? ' stage-plain' : '') }, [inner]);
+      const stage = el('div', { class: 'stage' }, [inner]);
 
       const wrap = el('div', { class: 'content-screen' }, [
-        mode === 'ai' ? toolbarHost : null,
+        toolbarHost,
         stage,
         el('div', { class: 'studybar' }, [
           el('span', { class: 'studybar-where', text: P[page].eyebrow + ' · ' + P[page].title }),
@@ -327,46 +244,26 @@
         ])
       ]);
 
-      if (mode === 'ai') requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         STATE.widget = new window.ScrollWidget(scroller, parts, kind, toolbarHost);
       });
       return wrap;
     };
   }
 
-  /* ===================== session assembly ===================== */
+  /* ===================== session assembly + boot ===================== */
 
-  function startSession(session, cond) {
-    STATE.session = session;
-    STATE.cond = cond;
-    STATE.screens = [
-      welcomeScreen,
-      introScreen('chat'), contentPage('chat', false),
-      introScreen('doc'), contentPage('doc', true),
-      endScreen
-    ];
-    show(0);
-  }
+  STATE.screens = [
+    welcomeScreen,
+    introScreen('chat'), contentPage('chat', false),
+    introScreen('doc'), contentPage('doc', true),
+    endScreen
+  ];
 
-  /* ===================== boot ===================== */
-
-  const params = new URLSearchParams(location.search);
-  const s = parseInt(params.get('s'), 10);
-  const pick = (v) => (v === 'ai' || v === 'regular' ? v : null);
-  const chat = pick(params.get('chat')), doc = pick(params.get('doc'));
   // ?page=chat or ?page=doc jumps straight to that page — handy for rehearsing.
-  const jump = params.get('page');
-
-  if (s >= 1 || chat || doc) {
-    const base = defaultCond(s >= 1 ? s : 1);
-    startSession(s >= 1 ? s : 1, { chat: chat || base.chat, doc: doc || base.doc });
-    if (jump === 'chat') show(2);
-    else if (jump === 'doc') show(4);
-  } else {
-    STATE.screens = [setupScreen];
-    show(0);
-  }
+  const jump = new URLSearchParams(location.search).get('page');
+  show(jump === 'chat' ? 2 : jump === 'doc' ? 4 : 0);
 
   // exposed for checks only; holds no participant data
-  window.STUDY_APP = { defaultCond, STATE };
+  window.STUDY_APP = { STATE };
 })();

@@ -7,9 +7,9 @@ Static pages plus one serverless function. No build step, no framework, no datab
 
 ---
 
-## The two conditions
+## The tool
 
-**Intelligent Scrolling (IS)** — exactly the four features the protocol allows, and no others:
+**Intelligent Scrolling** — exactly the four features the protocol allows, and no others:
 
 | Feature | AI? | When it calls Claude |
 |---|---|---|
@@ -29,31 +29,23 @@ itself, never generated, so it cannot be wrong; Claude writes only the label tex
 | amber | a table | `TABLE` |
 | dark amber, ringed | a search hit (overrides the colour above) | — |
 
-**Conventional Scrolling (CS)** — the same pages and styling with the rail removed, the ordinary
-scrollbar, and zero calls to the API. No keyboard shortcut is bound anywhere in the app, so the
-browser's own find (Ctrl/Cmd+F) is never intercepted in either condition.
+No keyboard shortcut is bound anywhere in the app, so the browser's own find (Ctrl/Cmd+F) is never
+intercepted.
 
 ## Running a session (moderated)
 
 The researcher reads every task aloud from the session script (kept outside this repo, as a doc).
-The website shows only context, the two long pages, and a button to move on — no task panel, no
-on-screen timer, no questionnaires.
+The website shows only context, the two long pages, and a button to move on — no setup screen, no
+session number, no task panel, no on-screen timer, no questionnaires.
 
-Flow: researcher setup → welcome (context for both pages) → page 1 intro → **conversation** →
-page 2 intro → **article** → end screen.
-
-Each page is shown with the AI tool (`ai`) or a regular scrollbar (`regular`). The page order is
-fixed (conversation first). Default by session number: odd sessions get the AI tool on the
-conversation, even sessions on the article.
+Flow: welcome (context for both pages) → page 1 intro → **conversation** → page 2 intro →
+**article** → end screen. **Both pages always have the AI scrolling tool.**
 
 ```
-/?s=1                         odd session: chat=ai, doc=regular
-/?s=2                         even session: chat=regular, doc=ai
-/?s=3&chat=ai&doc=ai          override either page by hand
-/?s=1&page=doc                jump straight to a page, for rehearsing
+/                 start of the session (send this link)
+/?page=chat       jump straight to the conversation, for rehearsing
+/?page=doc        jump straight to the article
 ```
-
-The setup screen (no parameters) builds these links. They hold no personal information.
 
 ## What is never stored or sent
 
@@ -93,8 +85,9 @@ artifact rather than only the prose around it. This is still only study content.
 
 ## Decisions for the PI
 
-1. **IRB fit.** The moderated format, the new pages, the pre-test interview and the per-page ease
-   rating differ from the approved protocol (Phase 1 / Phase 2, timed on-screen tasks, SUS). Check
+1. **IRB fit.** The moderated format, AI on both pages (no in-session baseline), the new pages, the
+   pre-test interview and the per-page ease rating differ from the approved protocol (Phase 1 /
+   Phase 2, timed on-screen tasks, SUS). Check
    whether a modification is needed before the first participant. The four features and the data
    rules are unchanged.
 2. **Preview caching.** `widget/widget.js` → `CONFIG.cachePreviews` is still **false**.
@@ -108,9 +101,8 @@ artifact rather than only the prose around it. This is still only study content.
 - [x] No database, storage APIs, cookies for input, or analytics anywhere in the code
 - [x] Refreshing any page clears all typed text and selections
 - [x] Anthropic calls only from the server, only in the IS condition, carrying only content and search text
-- [x] CS condition makes zero AI calls and leaves Ctrl/Cmd+F working
-- [x] Odd sessions default to AI on the conversation, even sessions to AI on the article
-- [x] Regular pages make zero calls to `/api/claude` (checked with a request log)
+- [x] No keyboard shortcut is bound, so Ctrl/Cmd+F always works
+- [x] The site opens on the welcome screen; both pages load the AI tool
 - [ ] Labels, preview and search checked against the real API on the new, longer pages
 - [ ] Checked in current Chrome, Edge, Firefox, and Safari on a laptop *(verified in Chrome so far)*
 

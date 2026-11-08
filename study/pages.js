@@ -29,10 +29,7 @@ window.STUDY_PAGES = {
     open: 'Open the article'
   },
 
-  tool: {
-    ai: 'On this page, the scrollbar has the AI scrolling tool.',
-    regular: 'On this page, the scrollbar is a regular scrollbar.'
-  },
+  tool: 'This page has the AI scrolling tool.',
 
   end: {
     title: 'That\'s all the pages',
