@@ -67,6 +67,9 @@
 .isw-tools .isw-clear { align-self: flex-start; background: none; border: 0; color: var(--isw-dim); text-decoration: underline; font-size: 12px; padding: 5px 10px; }
 
 /* ---------- the rail: replaces the native scrollbar ---------- */
+/* the page still scrolls by wheel, trackpad and keyboard; only the browser's bar is hidden */
+.isw-native-off { scrollbar-width: none; -ms-overflow-style: none; }
+.isw-native-off::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .isw-rail {
   position: absolute; top: 0; right: 0; bottom: 0; width: 34px; z-index: 20;
   background: #f6f6f9; border-left: 1px solid var(--isw-line);

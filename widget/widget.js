@@ -92,6 +92,9 @@
       this.query = '';            // the active search, also given to previews
       this.expanded = false;
       this.parts.forEach(p => { p.type = typeOf(p); });
+      // The rail replaces the browser's own scrollbar; showing both gives two position markers
+      // that disagree, so the native one is hidden while the widget is on the page.
+      this.scroller.classList.add('isw-native-off');
 
       this.buildHeader(headerHost);
       this.buildRail();
@@ -241,6 +244,7 @@
       window.removeEventListener('mouseup', this.dragEnd);
       this.resizeObs.disconnect();
       this.scroller.style.right = '';
+      this.scroller.classList.remove('isw-native-off');
       [this.selPop, this.rail, this.outline, this.tools, this.preview].forEach(n => n.remove());
     }
 
